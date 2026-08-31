@@ -3,7 +3,9 @@
     "api/index.php": { "runtime": "vercel-php@0.7.3" }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.php" }
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/api/(.*)", "destination": "/api/index.php" },
+    { "source": "/(.*)", "destination": "/api/index.php" }
   ],
   "cleanUrls": true
 }
