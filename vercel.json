@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/index.php": { "runtime": "vercel-php@0.6.0" }
+    "api/index.php": { "runtime": "vercel-php@0.7.3" }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.php" }
