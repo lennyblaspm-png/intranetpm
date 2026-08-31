@@ -1,0 +1,15 @@
+# Intranet PM — InfinityFree (LiteSpeed, compatible .htaccess)
+
+Options -Indexes
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /PM/
+
+  # Bloque l'accès direct à /data/ (modifiable par PHP uniquement)
+  RewriteRule ^data(?:/|$) - [F,L]
+
+  # API REST
+  RewriteRule ^api(?:/|$) api.php [L,QSA]
+</IfModule>

@@ -1,0 +1,20 @@
+[
+    {
+        "article": "Article 222-13",
+        "titre": "Violences volontaires",
+        "description": "Les violences ayant entraîné une incapacité de travail inférieure ou égale à huit jours ou n'ayant entraîné aucune incapacité de travail sont punies de trois ans d'emprisonnement et de 45 000 euros d'amende.",
+        "categorie": "Atteintes à l'intégrité physique"
+    },
+    {
+        "article": "Article 311-3",
+        "titre": "Vol simple",
+        "description": "Le vol est puni de trois ans d'emprisonnement et de 45 000 euros d'amende.",
+        "categorie": "Atteintes aux biens"
+    },
+    {
+        "article": "Article R625-1",
+        "titre": "Tapage nocturne",
+        "description": "Les bruits ou tapages injurieux ou nocturnes troublant la tranquillité d'autrui sont punis de l'amende prévue pour les contraventions de la 3e classe.",
+        "categorie": "Tranquillité publique"
+    }
+]

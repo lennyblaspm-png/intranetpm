@@ -1,0 +1,13 @@
+[
+    {"rio":"admin","nom":"DIRECTION","prenom":"Admin","grade":"DPM","role":"Direction","specialites":[]},
+    {"rio":"6452182","nom":"BLAS","prenom":"Lenny","grade":"DPM","role":"Direction","specialites":[]},
+    {"rio":"4528259","nom":"DUPONT","prenom":"Quentin","grade":"CDP","role":"Direction","specialites":["Brigade Motorisée Urbaine"]},
+    {"rio":"4851637","nom":"Tasso","prenom":"philippe","grade":"CDS-2","role":"Effectif","specialites":[]},
+    {"rio":"5123658","nom":"SCOTT","prenom":"Erwann","grade":"DRA","role":"Direction","specialites":[]},
+    {"rio":"6350126","nom":"MORALES","prenom":"Daniel","grade":"BCH","role":"Effectif","specialites":[]},
+    {"rio":"2658987","nom":"LEPOINTE","prenom":"Noah","grade":"BCH","role":"Effectif","specialites":[]},
+    {"rio":"8597563","nom":"ANGELY","prenom":"Antony","grade":"BCH","role":"Effectif","specialites":[]},
+    {"rio":"6354584","nom":"GONSALEZ","prenom":"Justin","grade":"BCH","role":"Effectif","specialites":[]},
+    {"rio":"8908654","nom":"YUMA","prenom":"Manolo","grade":"BGD","role":"Effectif","specialites":[]},
+    {"rio":"3289752","nom":"BELLO","prenom":"Marco","grade":"BGD","role":"Effectif","specialites":[]}
+]

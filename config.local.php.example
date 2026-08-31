@@ -1,0 +1,18 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Hébergement PHP : copier ce fichier en « config.local.php » (même dossier que api.php).
+ * Ne commitez pas config.local.php s’il contient des réglages spécifiques à la prod.
+ *
+ * base_path : URL du site sans domaine, SANS slash final.
+ *   Exemple : site à https://mondomaine.fr/intranet/  →  base_path => '/intranet'
+ *   Laisser '' si l’intranet est à la racine du domaine.
+ *
+ * session_cookie_secure : null = détection auto (HTTPS, X-Forwarded-Proto, Cloudflare).
+ *   Forcer true en HTTPS si l’auto-détection échoue derrière un proxy.
+ */
+return [
+    'base_path' => '',
+    'session_cookie_secure' => null,
+];
