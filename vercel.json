@@ -1,13 +1,13 @@
 {
   "functions": {
-    "api.php": { "runtime": "vercel-php@0.6.0" },
+    "api/index.php": { "runtime": "vercel-php@0.6.0" },
     "index.php": { "runtime": "vercel-php@0.6.0" },
     "dashboard.php": { "runtime": "vercel-php@0.6.0" },
     "candidature.php": { "runtime": "vercel-php@0.6.0" },
     "espace-candidat.php": { "runtime": "vercel-php@0.6.0" }
   },
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api.php" },
+    { "src": "/api/(.*)", "dest": "/api/index.php" },
     { "src": "/(.*)", "dest": "/$1" }
   ],
   "cleanUrls": true
