@@ -1071,6 +1071,7 @@ if ($method === 'POST' && $sub === '/candidatures/delete') {
     $store = pm_read_store();
     $accounts = pm_get_accounts_from_store($store);
     $rio = strtolower((string) ($_SESSION['rio'] ?? ''));
+    error_log('[PM DELETE] session_rio=' . $rio . ' cookie=' . ($_COOKIE['pm_auth'] ?? 'NONE'));
     $actor = null;
     foreach ($accounts as $a) {
         if (isset($a['rio']) && strtolower((string) $a['rio']) === $rio) {
