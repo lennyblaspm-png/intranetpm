@@ -84,9 +84,43 @@ function pm_json_response($data, int $code = 200): void
 
 function pm_require_session(): void
 {
-    if (empty($_SESSION['rio'])) {
-        pm_json_response(['error' => 'Non connecté.'], 401);
-    }
+    if (!empty($_SESSION['rio'])) return;
+    // Cookie auth fallback for serverless (Vercel)
+    pm_load_auth_cookie();
+    if (!empty($_SESSION['rio'])) return;
+    pm_json_response(['error' => 'Non connecté.'], 401);
+}
+
+function pm_auth_secret(): string {
+    return 'pm_intr_key_93RP_2024';
+}
+
+function pm_set_auth_cookie(string $rio): void {
+    $secret = pm_auth_secret();
+    $payload = $rio . '|' . time();
+    $sig = hash_hmac('sha256', $payload, $secret);
+    $token = base64_encode($payload . '|' . $sig);
+    setcookie('pm_auth', $token, [
+        'expires' => time() + 7 * 24 * 3600,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function pm_load_auth_cookie(): void {
+    $token = $_COOKIE['pm_auth'] ?? '';
+    if ($token === '') return;
+    $decoded = base64_decode($token, true);
+    if ($decoded === false) return;
+    $parts = explode('|', $decoded);
+    if (count($parts) !== 3) return;
+    [$rio, $ts, $sig] = $parts;
+    $payload = $rio . '|' . $ts;
+    $expected = hash_hmac('sha256', $payload, pm_auth_secret());
+    if (!hash_equals($expected, $sig)) return;
+    if (time() - (int)$ts > 7 * 24 * 3600) return;
+    $_SESSION['rio'] = $rio;
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -601,6 +635,7 @@ if ($method === 'POST' && $sub === '/auth/login') {
         pm_json_response(['error' => 'Échec de connexion.'], 500);
     }
     $_SESSION['rio'] = (string) ($found['user']['rio'] ?? '');
+    pm_set_auth_cookie($_SESSION['rio']);
     session_write_close();
     error_log('[PM DEBUG] POST /api/auth/login success rio=' . $_SESSION['rio']);
     pm_json_response(['user' => pm_public_user($found['user'])]);
@@ -631,8 +666,8 @@ if ($method === 'POST' && $sub === '/auth/dev-session') {
         pm_json_response(['error' => 'Aucun compte.'], 500);
     }
     $_SESSION['rio'] = (string) ($admin['rio'] ?? '');
+    pm_set_auth_cookie($_SESSION['rio']);
     session_write_close();
-    error_log('[PM DEBUG] POST /api/auth/dev-session success rio=' . $_SESSION['rio']);
     pm_json_response([
         'user' => pm_public_user($admin),
         'notice' => 'Accès libre (développement local).',
@@ -655,10 +690,12 @@ if ($method === 'POST' && $sub === '/auth/logout') {
         'httponly' => true,
         'samesite' => is_string($p['samesite'] ?? null) ? $p['samesite'] : 'Lax',
     ]);
+    setcookie('pm_auth', '', ['expires' => time() - 43200, 'path' => '/']);
     pm_json_response(['ok' => true]);
 }
 
 if ($method === 'GET' && $sub === '/auth/me') {
+    pm_load_auth_cookie();
     $rio = isset($_SESSION['rio']) ? (string) $_SESSION['rio'] : '';
     if ($rio === '') {
         error_log('[PM DEBUG] GET /api/auth/me unauthorized: missing session');
