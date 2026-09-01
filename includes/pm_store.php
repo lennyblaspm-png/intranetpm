@@ -73,6 +73,22 @@ function pm_project_root(): string
 
 function pm_data_dir(): string
 {
+    if (str_contains($_SERVER['VERCEL_URL'] ?? '', 'vercel.app') || str_contains($_SERVER['VERCEL_ENV'] ?? '', 'production')) {
+        $tmp = '/tmp/pm_data';
+        if (!is_dir($tmp)) @mkdir($tmp, 0775, true);
+        // Seed from deployment on first request
+        $seed = pm_project_root() . DIRECTORY_SEPARATOR . 'data';
+        if (is_dir($seed) && $tmp !== $seed) {
+            foreach (['store.json', 'candidatures.json', 'recrutement_messages.json'] as $f) {
+                $src = $seed . DIRECTORY_SEPARATOR . $f;
+                $dst = $tmp . DIRECTORY_SEPARATOR . $f;
+                if (is_file($src) && !is_file($dst)) {
+                    @copy($src, $dst);
+                }
+            }
+        }
+        return $tmp;
+    }
     return pm_project_root() . DIRECTORY_SEPARATOR . 'data';
 }
 

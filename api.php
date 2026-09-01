@@ -47,7 +47,7 @@ function pm_get_webhook_url(array $store, string $type): string {
 $pmHostingConfig = pm_load_hosting_config();
 $secure = pm_session_cookie_secure($pmHostingConfig);
 $cookiePath = pm_cookie_path($pmHostingConfig);
-$sessionPath = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'sessions';
+$sessionPath = (str_contains($_SERVER['VERCEL_URL'] ?? '', 'vercel.app') ? '/tmp' : __DIR__) . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'sessions';
 if (!is_dir($sessionPath)) {
     @mkdir($sessionPath, 0775, true);
 }
