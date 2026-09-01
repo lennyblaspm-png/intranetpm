@@ -7819,48 +7819,6 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                     finally{ btn.disabled=false; btn.innerHTML=prev; }
                 });
             }
-            root.querySelectorAll('.recrut-delete-one').forEach((btn) => {
-
-                btn.addEventListener('click', async () => {
-
-                    const idRaw = btn.getAttribute('data-candidature-id');
-
-                    if (!idRaw) return;
-
-                    if (
-
-                        !window.confirm(
-
-                            'Supprimer définitivement ce dossier et sa messagerie recrutement ?\nTous statuts -- action irréversible.',
-
-                        )
-
-                    ) {
-
-                        return;
-
-                    }
-
-                    const ok = await runDeleteRequest({ id: idRaw });
-
-                    if (ok) {
-
-                        addLog(
-
-                            'Recrutement -- suppression',
-
-                            idRaw.slice(0, 12) + '--',
-
-                        );
-
-                        await renderRecrutement();
-
-                    }
-
-                });
-
-            });
-
             root.querySelectorAll('.ia-analyze-cand-btn').forEach((btn) => {
 
                 btn.addEventListener('click', async () => {
@@ -9238,6 +9196,21 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
 
                 <p style="font-size:11px; color:#94a3b8; margin-top:12px;">Chaque URL doit commencer par <code>https://discord.com/api/webhooks/</code>. Les rapports utiliseront automatiquement le webhook correspondant.</p>
 
+            </div>
+
+            <div class="card" style="max-width:900px; margin-top:16px;">
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;"><div style="width:28px; height:28px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center;"><i class="fas fa-robot"></i></div><h2 class="card-title" style="margin:0;">Ollama (IA locale)</h2></div>
+
+                <p style="color:#64748b; font-size:13px; margin:0 0 14px 38px;">URL du serveur Ollama accessible depuis Vercel. Utilisez <a href="https://ngrok.com" target="_blank" style="color:#2563eb;">ngrok</a> ou <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/" target="_blank" style="color:#2563eb;">Cloudflare Tunnel</a> pour exposer votre Ollama local.</p>
+
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="url" id="ollama-url-input" value="" placeholder="https://xxxx.ngrok-free.app" style="flex:1; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; background:#fff;">
+                    <button class="btn btn-secondary btn-sm" id="btn-test-ollama" title="Tester connexion"><i class="fas fa-plug"></i> Tester</button>
+                </div>
+
+                <div id="ollama-status-msg" style="margin-top:8px; font-size:12px;"></div>
+
             </div>`;
 
         document.getElementById('btn-save-all-wh').onclick= async ()=>{
@@ -9279,6 +9252,18 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
 
             alert('Webhooks enregistrés ! ('+Object.keys(newMap).filter(k=>newMap[k]).length+' URL(s))');
             if(btn){ btn.disabled=false; btn.innerHTML=prevHtml; }
+
+            const ollamaUrlInput = document.getElementById('ollama-url-input');
+            if(ollamaUrlInput){
+                const oUrl = ollamaUrlInput.value.trim();
+                try{
+                    const data = JSON.parse(pmLocalStorage.getItem(STORAGE_KEY) || '{}');
+                    data['PM_INTRANET_OLLAMA_URL'] = oUrl;
+                    pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    if(window.pmPersistNow) await window.pmPersistNow();
+                }catch(e){ console.error('[PM] Ollama URL save failed', e); }
+            }
+
             renderGestionWebhooks();
 
         };
@@ -9302,6 +9287,27 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
             }catch(e){ alert('Erreur réseau: '+e.message); }
 
         };
+
+        // Load Ollama URL from store
+        try{
+            const storeData=JSON.parse(pmLocalStorage.getItem(STORAGE_KEY)||'{}');
+            const ollamaEl=document.getElementById('ollama-url-input');
+            if(ollamaEl && storeData['PM_INTRANET_OLLAMA_URL']) ollamaEl.value=storeData['PM_INTRANET_OLLAMA_URL']||'';
+        }catch(e){}
+
+        document.getElementById('btn-test-ollama')?.addEventListener('click', async ()=>{
+            const msg=document.getElementById('ollama-status-msg');
+            const urlInput=document.getElementById('ollama-url-input');
+            const url=urlInput?.value.trim();
+            if(!url){ msg.innerHTML='<span style="color:#dc2626;">Renseignez une URL d\'abord.</span>'; return; }
+            if(!url.startsWith('http')){ msg.innerHTML='<span style="color:#dc2626;">URL invalide.</span>'; return; }
+            msg.innerHTML='<span style="color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Test en cours...</span>';
+            try{
+                const r=await fetch(url+'/api/tags',{method:'GET',signal:AbortSignal.timeout(8000)});
+                if(r.ok){ msg.innerHTML='<span style="color:#16a34a;"><i class="fas fa-check-circle"></i> Ollama connecté !</span>'; }
+                else{ msg.innerHTML='<span style="color:#dc2626;">Erreur '+r.status+' — vérifiez l\'URL.</span>'; }
+            }catch(e){ msg.innerHTML='<span style="color:#dc2626;">Impossible de joindre Ollama — '+e.message+'</span>'; }
+        });
 
         // Helper global pour les rapports : récupère l'URL par type
 

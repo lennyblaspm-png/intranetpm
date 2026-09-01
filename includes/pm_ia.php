@@ -1,7 +1,13 @@
 <?php
 declare(strict_types=1);
 
-const PM_OLLAMA_URL = 'http://127.0.0.1:11434';
+const PM_OLLAMA_URL_DEFAULT = 'http://127.0.0.1:11434';
+
+function pm_ollama_url(): string {
+    $store = pm_read_store();
+    $custom = trim((string) ($store['PM_INTRANET_OLLAMA_URL'] ?? ''));
+    return $custom !== '' && str_starts_with($custom, 'http') ? $custom : PM_OLLAMA_URL_DEFAULT;
+}
 
 function pm_ollama_generate(string $model, string $prompt, float $temperature = 0.3): ?string
 {
@@ -15,7 +21,7 @@ function pm_ollama_generate(string $model, string $prompt, float $temperature = 
         ],
     ]);
 
-    $ch = curl_init(PM_OLLAMA_URL . '/api/generate');
+    $ch = curl_init(pm_ollama_url() . '/api/generate');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => $payload,
@@ -108,7 +114,7 @@ function pm_extract_json(string $text): ?array
 
 function pm_ollama_status(): bool
 {
-    $ch = curl_init(PM_OLLAMA_URL . '/api/tags');
+    $ch = curl_init(pm_ollama_url() . '/api/tags');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 5,
