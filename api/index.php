@@ -70,4 +70,14 @@ if (isset($pages[$uri])) {
 }
 
 http_response_code(404);
-echo 'Not found: ' . htmlspecialchars($uri) . ' | cwd=' . getcwd() . ' | dir=' . __DIR__;
+header('Content-Type: text/plain');
+echo "DEBUG 404\n";
+echo "URI: $uri\n";
+echo "CWD: " . getcwd() . "\n";
+echo "__DIR__: " . __DIR__ . "\n";
+echo "CWD contents: " . implode(', ', @array_slice(scandir(getcwd()), 0, 30)) . "\n";
+if (is_dir(getcwd() . '/assets')) echo "assets/: " . implode(', ', @scandir(getcwd() . '/assets')) . "\n";
+else echo "assets/ NOT FOUND in cwd\n";
+if (is_dir(__DIR__ . '/..')) echo "__DIR__/../ contents: " . implode(', ', @array_slice(scandir(__DIR__ . '/..'), 0, 30)) . "\n";
+if (is_dir(__DIR__ . '/../assets')) echo "__DIR__/../assets/: " . implode(', ', @scandir(__DIR__ . '/../assets')) . "\n";
+else echo "__DIR__/../assets/ NOT FOUND\n";
