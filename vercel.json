@@ -5,15 +5,16 @@
       "use": "vercel-php@0.7.3",
       "config": {
         "includeFiles": [
-          "assets/**",
           "includes/**",
-          "*.php",
           "data/**"
         ]
       }
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "api/index.php" }
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/api/(.*)", "dest": "api/index.php" },
+    { "src": "/(.*\\.php)", "dest": "api/index.php" },
+    { "src": "/$", "dest": "api/index.php" }
   ]
 }
