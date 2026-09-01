@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/pm_hosting_config.php';
 require_once __DIR__ . '/includes/pm_store.php';
-require_once __DIR__ . '/includes/pm_ia.php';
 
 function pm_send_discord_webhook(string $url, array $payload): void {
     if ($url === '' || !str_starts_with($url, 'https://')) return;
@@ -140,43 +139,6 @@ if ($sub === '' || $sub === false) {
 }
 
 // ─── IA Routes ───────────────────────────────────────────────────
-
-// GET /api/ia/status — check if Ollama is reachable
-if ($method === 'GET' && $sub === '/ia/status') {
-    $online = pm_ollama_status();
-    pm_json_response(['online' => $online]);
-}
-
-// POST /api/ia/analyze-candidature — analyze a candidature with AI
-if ($method === 'POST' && $sub === '/ia/analyze-candidature') {
-    set_time_limit(180);
-    pm_require_session();
-    $raw = file_get_contents('php://input');
-    $body = is_string($raw) ? json_decode($raw, true) : null;
-    if (!is_array($body)) $body = [];
-    $motivation = trim((string) ($body['motivation'] ?? ''));
-    $experience = trim((string) ($body['experience'] ?? ''));
-    if ($motivation === '' && $experience === '') {
-        pm_json_response(['error' => 'Motivation ou expérience requise.'], 400);
-    }
-    $result = pm_analyze_candidature($motivation, $experience);
-    pm_json_response($result);
-}
-
-// POST /api/ia/detect-ai — detect if text was written by AI
-if ($method === 'POST' && $sub === '/ia/detect-ai') {
-    set_time_limit(180);
-    pm_require_session();
-    $raw = file_get_contents('php://input');
-    $body = is_string($raw) ? json_decode($raw, true) : null;
-    if (!is_array($body)) $body = [];
-    $text = trim((string) ($body['text'] ?? ''));
-    if ($text === '') {
-        pm_json_response(['error' => 'Texte requis.'], 400);
-    }
-    $result = pm_detect_ai_text($text);
-    pm_json_response($result);
-}
 
 // ─── Integration Exam API ───
 require_once __DIR__ . '/includes/pm_examens.php';

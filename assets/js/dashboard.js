@@ -7722,7 +7722,9 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
 
                                   escapeHtml(t || '--').replace(/\n/g, '<br>');
 
-                              return `              <article class="recrut-card">                <div class="recrut-card__top">                  <div>                    <strong>${escapeHtml(c.reference || '')}</strong>                    <span class="recrut-card__muted"> · ${escapeHtml(formatCandDt(c.created_at))}</span>                  </div>                  <div class="recrut-card__actions">                  <button type="button" class="btn btn-danger btn-sm recrut-delete-one" data-candidature-id="${cid}" title="Supprimer définitivement ce dossier et sa messagerie recrutement">                        <i class="fas fa-trash-alt" aria-hidden="true"></i> Supprimer                    </button>                  <select class="recrutement-statut-select recrut-card__select" data-candidature-id="${cid}" data-prev-statut="${sid}">${sel}</select>                  </div>                </div>                <p class="recrut-card__pole"><span class="badge badge-pole">${escapeHtml(candPoleLabel(c.pole))}</span></p>                <p class="recrut-card__discord"><i class="fab fa-discord" aria-hidden="true"></i> ${escapeHtml(c.discord || '')}</p>                <p><strong>${escapeHtml(c.prenom || '')} ${escapeHtml(c.nom || '')}</strong> -- ${escapeHtml(String(c.age ?? ''))} ans</p>                <details class="recrut-card__details">                  <summary>Voir les textes du candidat</summary>                  <div class="recrut-card__blocks">                    <div><strong>Disponibilités</strong><p>${br(c.disponibilites)}</p></div>                    <div><strong>Expérience</strong><p>${br(c.experience)}</p></div>                    <div><strong>Motivation</strong><p>${br(c.motivation)}</p></div>                  </div>                  <div style="margin-top:10px;">                    <button type="button" class="btn btn-secondary btn-sm ia-analyze-cand-btn" data-cid="${cid}" data-motivation="${escapeHtml(c.motivation || '')}" data-experience="${escapeHtml(c.experience || '')}" style="font-size:11px;"><i class="fas fa-robot"></i> Analyser avec IA</button>                    <div id="ia-result-${cid}" style="margin-top:8px;"></div>                  </div>                </details>              </article>`;
+                              return `              <article class="recrut-card">                <div class="recrut-card__top">                  <div>                    <strong>${escapeHtml(c.reference || '')}</strong>                    <span class="recrut-card__muted"> · ${escapeHtml(formatCandDt(c.created_at))}</span>                  </div>                  <div class="recrut-card__actions">                  <button type="button" class="btn btn-danger btn-sm recrut-delete-one" data-candidature-id="${cid}" title="Supprimer définitivement ce dossier et sa messagerie recrutement">                        <i class="fas fa-trash-alt" aria-hidden="true"></i> Supprimer                    </button>                  <select class="recrutement-statut-select recrut-card__select" data-candidature-id="${cid}" data-prev-statut="${sid}">${sel}</select>                  </div>                </div>                <p class="recrut-card__pole"><span class="badge badge-pole">${escapeHtml(candPoleLabel(c.pole))}</span></p>                <p class="recrut-card__discord"><i class="fab fa-discord" aria-hidden="true"></i> ${escapeHtml(c.discord || '')}</p>                <p><strong>${escapeHtml(c.prenom || '')} ${escapeHtml(c.nom || '')}</strong> -- ${escapeHtml(String(c.age ?? ''))} ans</p>                <details class="recrut-card__details">                  <summary>Voir les textes du candidat</summary>                  <div class="recrut-card__blocks">                    <div><strong>Disponibilités</strong><p>${br(c.disponibilites)}</p></div>                    <div><strong>Expérience</strong><p>${br(c.experience)}</p></div>                    <div><strong>Motivation</strong><p>${br(c.motivation)}</p></div>                                    </div>
+                </details>
+              </article>`;
 
                           })
 
@@ -7819,164 +7821,6 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                     finally{ btn.disabled=false; btn.innerHTML=prev; }
                 });
             }
-            root.querySelectorAll('.ia-analyze-cand-btn').forEach((btn) => {
-
-                btn.addEventListener('click', async () => {
-
-                    const cid = btn.dataset.cid;
-
-                    const outEl = document.getElementById('ia-result-' + cid);
-
-                    if (!outEl) return;
-
-                    outEl.innerHTML =
-
-                        '<p style="color:#666;font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Analyse IA en cours--</p>';
-
-                    btn.disabled = true;
-
-                    try {
-
-                        const res = await fetch('api/ia/analyze-candidature', {
-
-                            method: 'POST',
-
-                            credentials: 'same-origin',
-
-                            headers: {
-
-                                'Content-Type':
-
-                                    'application/json; charset=UTF-8',
-
-                            },
-
-                            body: JSON.stringify({
-
-                                motivation: btn.dataset.motivation || '',
-
-                                experience: btn.dataset.experience || '',
-
-                            }),
-
-                        });
-
-                        const data = await res.json().catch(() => ({}));
-
-                        if (!res.ok || data.error) {
-
-                            outEl.innerHTML =
-
-                                '<p style="color:#c62828;font-size:12px;">' +
-
-                                escapeHtml(data.error || 'Erreur IA.') +
-
-                                '</p>';
-
-                        } else {
-
-                            const scoreColor =
-
-                                (data.score || 0) >= 70
-
-                                    ? '#166534'
-
-                                    : (data.score || 0) >= 40
-
-                                      ? '#92400e'
-
-                                      : '#991b1b';
-
-                            let rHtml =
-
-                                '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:12px;">';
-
-                            rHtml +=
-
-                                '<p style="margin:0 0 6px;"><strong>Score IA :</strong> <span style="color:' +
-
-                                scoreColor +
-
-                                ';font-weight:800;font-size:16px;">' +
-
-                                (data.score || '--') +
-
-                                '/100</span></p>';
-
-                            if (data.resume)
-
-                                rHtml +=
-
-                                    '<p style="margin:0 0 6px;"><strong>Résumé :</strong> ' +
-
-                                    escapeHtml(data.resume) +
-
-                                    '</p>';
-
-                            if (
-
-                                Array.isArray(data.points_forts) &&
-
-                                data.points_forts.length
-
-                            ) {
-
-                                rHtml +=
-
-                                    '<p style="margin:0 0 4px;"><strong>Points forts :</strong></p><ul style="margin:0;padding-left:18px;">';
-
-                                data.points_forts.forEach((p) => {
-
-                                    rHtml += '<li>' + escapeHtml(p) + '</li>';
-
-                                });
-
-                                rHtml += '</ul>';
-
-                            }
-
-                            if (
-
-                                Array.isArray(data.points_faibles) &&
-
-                                data.points_faibles.length
-
-                            ) {
-
-                                rHtml +=
-
-                                    '<p style="margin:6px 0 4px;"><strong>Points faibles :</strong></p><ul style="margin:0;padding-left:18px;">';
-
-                                data.points_faibles.forEach((p) => {
-
-                                    rHtml += '<li>' + escapeHtml(p) + '</li>';
-
-                                });
-
-                                rHtml += '</ul>';
-
-                            }
-
-                            rHtml += '</div>';
-
-                            outEl.innerHTML = rHtml;
-
-                        }
-
-                    } catch (e) {
-
-                        outEl.innerHTML =
-
-                            '<p style="color:#c62828;font-size:12px;">Erreur réseau.</p>';
-
-                    }
-
-                    btn.disabled = false;
-
-                });
-
-            });
-
         } catch (err) {
 
             console.error('[PM] Recrutement', err);
@@ -9198,19 +9042,6 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
 
             </div>
 
-            <div class="card" style="max-width:900px; margin-top:16px;">
-
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;"><div style="width:28px; height:28px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center;"><i class="fas fa-robot"></i></div><h2 class="card-title" style="margin:0;">Ollama (IA locale)</h2></div>
-
-                <p style="color:#64748b; font-size:13px; margin:0 0 14px 38px;">URL du serveur Ollama accessible depuis Vercel. Utilisez <a href="https://ngrok.com" target="_blank" style="color:#2563eb;">ngrok</a> ou <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/" target="_blank" style="color:#2563eb;">Cloudflare Tunnel</a> pour exposer votre Ollama local.</p>
-
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="url" id="ollama-url-input" value="" placeholder="https://xxxx.ngrok-free.app" style="flex:1; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; background:#fff;">
-                    <button class="btn btn-secondary btn-sm" id="btn-test-ollama" title="Tester connexion"><i class="fas fa-plug"></i> Tester</button>
-                </div>
-
-                <div id="ollama-status-msg" style="margin-top:8px; font-size:12px;"></div>
-
             </div>`;
 
         document.getElementById('btn-save-all-wh').onclick= async ()=>{
@@ -9253,17 +9084,6 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
             alert('Webhooks enregistrés ! ('+Object.keys(newMap).filter(k=>newMap[k]).length+' URL(s))');
             if(btn){ btn.disabled=false; btn.innerHTML=prevHtml; }
 
-            const ollamaUrlInput = document.getElementById('ollama-url-input');
-            if(ollamaUrlInput){
-                const oUrl = ollamaUrlInput.value.trim();
-                try{
-                    const data = JSON.parse(pmLocalStorage.getItem(STORAGE_KEY) || '{}');
-                    data['PM_INTRANET_OLLAMA_URL'] = oUrl;
-                    pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                    if(window.pmPersistNow) await window.pmPersistNow();
-                }catch(e){ console.error('[PM] Ollama URL save failed', e); }
-            }
-
             renderGestionWebhooks();
 
         };
@@ -9287,27 +9107,6 @@ const savedRow = allUsers.find((u) => u.rio.toString() === rio);
             }catch(e){ alert('Erreur réseau: '+e.message); }
 
         };
-
-        // Load Ollama URL from store
-        try{
-            const storeData=JSON.parse(pmLocalStorage.getItem(STORAGE_KEY)||'{}');
-            const ollamaEl=document.getElementById('ollama-url-input');
-            if(ollamaEl && storeData['PM_INTRANET_OLLAMA_URL']) ollamaEl.value=storeData['PM_INTRANET_OLLAMA_URL']||'';
-        }catch(e){}
-
-        document.getElementById('btn-test-ollama')?.addEventListener('click', async ()=>{
-            const msg=document.getElementById('ollama-status-msg');
-            const urlInput=document.getElementById('ollama-url-input');
-            const url=urlInput?.value.trim();
-            if(!url){ msg.innerHTML='<span style="color:#dc2626;">Renseignez une URL d\'abord.</span>'; return; }
-            if(!url.startsWith('http')){ msg.innerHTML='<span style="color:#dc2626;">URL invalide.</span>'; return; }
-            msg.innerHTML='<span style="color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Test en cours...</span>';
-            try{
-                const r=await fetch(url+'/api/tags',{method:'GET',signal:AbortSignal.timeout(8000)});
-                if(r.ok){ msg.innerHTML='<span style="color:#16a34a;"><i class="fas fa-check-circle"></i> Ollama connecté !</span>'; }
-                else{ msg.innerHTML='<span style="color:#dc2626;">Erreur '+r.status+' — vérifiez l\'URL.</span>'; }
-            }catch(e){ msg.innerHTML='<span style="color:#dc2626;">Impossible de joindre Ollama — '+e.message+'</span>'; }
-        });
 
         // Helper global pour les rapports : récupère l'URL par type
 
