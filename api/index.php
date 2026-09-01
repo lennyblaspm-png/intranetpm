@@ -7,10 +7,10 @@ if ($uri === '/api' || $uri === '/api.php' || str_starts_with($uri, '/api/')) {
     return;
 }
 
-// Static assets: serve from project root
+// Static assets: serve from project root (skip .php files)
 $root = __DIR__ . '/..';
 $file = $root . $uri;
-if ($uri !== '/' && is_file($file)) {
+if ($uri !== '/' && is_file($file) && strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'php') {
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
     $types = [
         'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
