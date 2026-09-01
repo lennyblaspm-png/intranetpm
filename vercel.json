@@ -5,6 +5,11 @@
       "use": "vercel-php@0.7.3",
       "config": {
         "includeFiles": [
+          "index.php",
+          "dashboard.php",
+          "candidature.php",
+          "espace-candidat.php",
+          "api.php",
           "includes/**",
           "data/**"
         ]

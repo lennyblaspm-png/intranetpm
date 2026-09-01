@@ -1,10 +1,10 @@
 <?php
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$root = getcwd();
+$root = __DIR__ . '/..';
 
 // API endpoints → api.php
 if ($uri === '/api' || $uri === '/api.php' || str_starts_with($uri, '/api/')) {
-    require __DIR__ . '/../api.php';
+    require $root . '/api.php';
     return;
 }
 
@@ -22,6 +22,5 @@ if (isset($pages[$uri])) {
     return;
 }
 
-// Fallback
 http_response_code(404);
 echo 'Not found';
