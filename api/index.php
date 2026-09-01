@@ -8,6 +8,27 @@ if ($uri === '/api' || $uri === '/api.php' || str_starts_with($uri, '/api/')) {
     return;
 }
 
+// Static assets
+if ($uri !== '/') {
+    $file = $root . $uri;
+    if (is_file($file) && strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'php') {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $types = [
+            'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'webp' => 'image/webp',
+            'ico' => 'image/x-icon', 'css' => 'text/css', 'js' => 'application/javascript',
+            'json' => 'application/json', 'woff' => 'font/woff', 'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf', 'eot' => 'application/vnd.ms-fontobject',
+        ];
+        if (isset($types[$ext])) {
+            header('Content-Type: ' . $types[$ext]);
+            header('Cache-Control: public, max-age=31536000');
+        }
+        readfile($file);
+        return;
+    }
+}
+
 // Pages PHP
 $pages = [
     '/'              => '/index.php',

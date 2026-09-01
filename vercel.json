@@ -10,6 +10,7 @@
           "candidature.php",
           "espace-candidat.php",
           "api.php",
+          "assets/**",
           "includes/**",
           "data/**"
         ]
@@ -17,9 +18,6 @@
     }
   ],
   "routes": [
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/api/(.*)", "dest": "api/index.php" },
-    { "src": "/(.*\\.php)", "dest": "api/index.php" },
-    { "src": "/$", "dest": "api/index.php" }
+    { "src": "/(.*)", "dest": "api/index.php" }
   ]
 }
