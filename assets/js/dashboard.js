@@ -8529,7 +8529,8 @@ loadAccounts();
 
         };
 
-        document.getElementById('btn-gen-temp-pwd').onclick = () => {
+        const btnGenPwd = document.getElementById('btn-gen-temp-pwd');
+        if (btnGenPwd) btnGenPwd.onclick = () => {
 
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%&*';
 
