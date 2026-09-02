@@ -1452,6 +1452,8 @@ refreshNotifBadge(); renderNotifPanel(); }
 
         'gestion-comptes',
 
+        'liste-rio',
+
         'gestion-webhooks',
 
         'generer-code-integration',
@@ -1619,6 +1621,12 @@ refreshNotifBadge(); renderNotifPanel(); }
             case 'gestion-comptes':
 
                 renderGestionComptes();
+
+                break;
+
+            case 'liste-rio':
+
+                renderListeRIO();
 
                 break;
 
@@ -8432,6 +8440,44 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                 reader.readAsText(file);
             }
         });
+    }
+
+    function renderListeRIO() {
+        if (!isPmTriadeLead(currentUser)) {
+            contentArea.innerHTML = `<div class="card"><p>Accès réservé à la Direction.</p></div>`;
+            return;
+        }
+        const data = pmLocalStorage.getItem(STORAGE_KEY);
+        const allUsers = data ? JSON.parse(data) : [];
+        const rows = [...allUsers].sort(compareUsersByGradeThenName).map(u => `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px; font-weight:600;">${escapeHtml(u.nom || '')}</td>
+                <td style="padding:10px;">${escapeHtml(u.prenom || '')}</td>
+                <td style="padding:10px; font-family:monospace; font-weight:700; color:#0f172a;">${escapeHtml(String(u.rio || ''))}</td>
+                <td style="padding:10px;">${escapeHtml(u.grade || '')}</td>
+            </tr>
+        `).join('');
+        contentArea.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Liste des RIO — Effectif</h2>
+                    <span style="font-size:12px; color:#64748b;">${allUsers.length} agent(s)</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #cbd5e1; background:#f8fafc;">
+                                <th style="padding:12px 10px; text-align:left; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Nom</th>
+                                <th style="padding:12px 10px; text-align:left; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Prénom</th>
+                                <th style="padding:12px 10px; text-align:left; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">RIO</th>
+                                <th style="padding:12px 10px; text-align:left; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
 
     function renderGestionWebhooks() {

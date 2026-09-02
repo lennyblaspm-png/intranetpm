@@ -273,6 +273,7 @@
                 <button class="cat-nav-btn direction-only" data-cat="admin" onclick="window.__pmToggleCat(this)"><i class="fas fa-gear"></i> Administration <i class="fas fa-chevron-down" style="font-size:9px;margin-left:2px;"></i></button>
                 <div class="cat-dropdown">
                     <button class="cat-dropdown-item direction-only" data-section="gestion-comptes" onclick="window.__pmGoSection('gestion-comptes')"><i class="fas fa-user-gear"></i> Gestion des comptes</button>
+                    <button class="cat-dropdown-item direction-only" data-section="liste-rio" onclick="window.__pmGoSection('liste-rio')"><i class="fas fa-id-card"></i> Liste RIO</button>
                     <button class="cat-dropdown-item direction-only" data-section="gestion-webhooks" onclick="window.__pmGoSection('gestion-webhooks')"><i class="fas fa-link"></i> Gestion des webhooks</button>
                 </div>
             </div>
