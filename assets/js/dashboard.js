@@ -8310,13 +8310,19 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             formArea.dataset.mode = 'create';
             formArea.querySelector('.card-title').textContent = 'Nouveau compte';
             document.getElementById('new-rio').disabled = false;
-            document.getElementById('new-rio').value = '';
+            let newRio = '';
+            try { newRio = generateUniqueRIO(); } catch(e) { newRio = String(Date.now()).slice(-7); }
+            if (!newRio || newRio.length !== 7) newRio = String(Math.floor(1000000 + Math.random() * 9000000));
+            document.getElementById('new-rio').value = newRio;
             document.getElementById('new-nom').value = '';
             document.getElementById('new-prenom').value = '';
             document.getElementById('new-grade').value = 'DPM';
             document.getElementById('new-role').value = 'Effectif';
             document.getElementById('new-is-recruteur').checked = false;
-            document.getElementById('new-password').value = '';
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%&*';
+            let pwd = '';
+            for (let i = 0; i < 10; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+            document.getElementById('new-password').value = pwd;
             const specReset = document.getElementById('new-specialite');
             if (specReset) specReset.value = '';
             const sa = document.getElementById('admin-serie-arme');
@@ -8401,7 +8407,11 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                 updateUI(currentUser);
             }
             addLog(mode === 'create' ? "Création compte" : "Modification compte", `${nom} ${prenom}`);
-            alert('Compte sauvegardé !');
+            if (mode === 'create') {
+                alert(`Compte créé !\n\nRIO : ${rio}\nMot de passe : ${password}\n\nCommuniquez ces identifiants à l'agent.`);
+            } else {
+                alert('Compte sauvegardé !');
+            }
             loadAccounts();
             void syncPersonnelFichesGridsFromServer().catch(() => {});
             document.getElementById('create-account-form-area').style.display = 'none';
