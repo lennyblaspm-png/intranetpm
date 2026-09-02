@@ -8387,7 +8387,7 @@ loadAccounts();
 
                         <button type="button" id="btn-cancel-form" style="padding:11px 18px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-weight:600; cursor:pointer;">Annuler</button>
 
-                        <button type="button" id="btn-save-account" onclick="if(window._handleSaveAccount) window._handleSaveAccount(); return false;" style="padding:11px 22px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;"><i class="fas fa-check"></i> Créer le compte</button>
+                        <button type="button" id="btn-save-account" style="padding:11px 22px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;"><i class="fas fa-check"></i> Créer le compte</button>
 
                     </div>
 
@@ -8544,17 +8544,14 @@ loadAccounts();
         };
 
         // Délégation robuste pour Créer le compte (survit aux re-render)
-        if(!window._saveAccountBound){
-            window._saveAccountBound=true;
-            document.addEventListener('click', function(e){
-                const btn=e.target.closest && e.target.closest('#btn-save-account');
-                if(!btn) return;
-                e.preventDefault();
-                console.info('[PM] Click Créer le compte');
-                // Appelle le handler centralisé
-                if(typeof window._handleSaveAccount==='function') window._handleSaveAccount();
-            });
-        }
+        document.addEventListener('click', function(e){
+            const btn=e.target.closest && e.target.closest('#btn-save-account');
+            if(!btn) return;
+            e.preventDefault();
+            console.info('[PM] Click Créer le compte');
+            if(typeof window._handleSaveAccount==='function') window._handleSaveAccount();
+            else console.error('[PM] _handleSaveAccount non défini');
+        });
         window._handleSaveAccount = () => {
             console.info('[PM] _handleSaveAccount start');
             try{
