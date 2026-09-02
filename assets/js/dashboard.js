@@ -8430,6 +8430,7 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                     try {
                         const data = JSON.parse(event.target.result);
                         pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
                         alert('Import réussi !');
                         loadAccounts();
                         void syncPersonnelFichesGridsFromServer().catch(() => {});
