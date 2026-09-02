@@ -8338,8 +8338,16 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
         };
 
         document.getElementById('btn-save-account').onclick = () => {
+            if (typeof window._handleSaveAccount === 'function') window._handleSaveAccount();
+        };
+        document.getElementById('btn-save-account').addEventListener('click', function(e) {
+            if (typeof window._handleSaveAccount === 'function') { e.stopImmediatePropagation(); window._handleSaveAccount(); }
+        });
+
+        window._handleSaveAccount = () => {
             const formArea = document.getElementById('create-account-form-area');
-            const mode = formArea.dataset.mode;
+            if (!formArea) return;
+            const mode = formArea.dataset.mode || 'create';
             const rio = document.getElementById('new-rio').value.trim();
             const nom = document.getElementById('new-nom').value.trim();
             const prenom = document.getElementById('new-prenom').value.trim();
@@ -8353,54 +8361,45 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             const serieLbd = document.getElementById('admin-serie-lbd')?.value.trim() ?? '';
             const isRecruteur = document.getElementById('new-is-recruteur')?.checked === true;
 
-            if (!rio || !nom || !prenom || !password) {
-                alert('Veuillez remplir tous les champs.');
+            if (!nom || !prenom) {
+                alert('Veuillez remplir Nom et Prénom.');
                 return;
+            }
+
+            let rioFinal = rio;
+            if (!rioFinal) {
+                try { rioFinal = generateUniqueRIO(); } catch(e) { rioFinal = String(Date.now()).slice(-7); }
+                if (!rioFinal || rioFinal.length !== 7) rioFinal = String(Math.floor(1000000 + Math.random() * 9000000));
+            }
+
+            let pwdFinal = password;
+            if (!pwdFinal) {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%&*';
+                pwdFinal = '';
+                for (let i = 0; i < 10; i++) pwdFinal += chars.charAt(Math.floor(Math.random() * chars.length));
             }
 
             const data = pmLocalStorage.getItem(STORAGE_KEY);
             let allUsers = data ? JSON.parse(data) : [];
 
             if (mode === 'create') {
-                if (allUsers.some(u => u.rio.toString() === rio)) {
+                if (allUsers.some(u => u.rio.toString() === rioFinal)) {
                     alert('Ce RIO existe déjà !');
                     return;
                 }
                 allUsers.push({
-                    rio,
-                    nom,
-                    prenom,
-                    grade,
-                    role,
-                    isRecruteur,
-                    password,
-                    specialites,
-                    serieArmeService,
-                    seriePie,
-                    serieLbd,
+                    rio: rioFinal, nom, prenom, grade, role, isRecruteur, password: pwdFinal, specialites, serieArmeService, seriePie, serieLbd,
                 });
             } else {
-                const index = allUsers.findIndex(u => u.rio.toString() === rio);
+                const index = allUsers.findIndex(u => u.rio.toString() === rioFinal);
                 if (index !== -1) {
-                    allUsers[index] = {
-                        ...allUsers[index],
-                        nom,
-                        prenom,
-                        grade,
-                        role,
-                        isRecruteur,
-                        password,
-                        specialites,
-                        serieArmeService,
-                        seriePie,
-                        serieLbd,
-                    };
+                    allUsers[index] = { ...allUsers[index], nom, prenom, grade, role, isRecruteur, password: pwdFinal, specialites, serieArmeService, seriePie, serieLbd };
                 }
             }
 
             pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
-                if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
-            const savedRow = allUsers.find(u => u.rio.toString() === rio);
+            if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
+            const savedRow = allUsers.find(u => u.rio.toString() === rioFinal);
             if (savedRow && String(savedRow.rio) === String(currentUser.rio)) {
                 currentUser = savedRow;
                 sessionStorage.setItem('currentUser', JSON.stringify(savedRow));
@@ -8408,7 +8407,7 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             }
             addLog(mode === 'create' ? "Création compte" : "Modification compte", `${nom} ${prenom}`);
             if (mode === 'create') {
-                alert(`Compte créé !\n\nRIO : ${rio}\nMot de passe : ${password}\n\nCommuniquez ces identifiants à l'agent.`);
+                alert(`Compte créé !\n\nRIO : ${rioFinal}\nMot de passe : ${pwdFinal}\n\nCommuniquez ces identifiants à l'agent.`);
             } else {
                 alert('Compte sauvegardé !');
             }
