@@ -8154,778 +8154,234 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
         }
 
         const loadAccounts = () => {
-
             const data = pmLocalStorage.getItem(STORAGE_KEY);
-
             const allUsers = data ? JSON.parse(data) : [];
-
             const tableBody = document.getElementById('accounts-table-body');
-
             if (tableBody) {
-
-                tableBody.innerHTML = [...allUsers]
-
-                    .sort(compareUsersByGradeThenName)
-
-                    .map(
-
-                        (u) =>
-
-                            `                    <tr style="border-bottom: 1px solid var(--pm-border);">                        <td style="padding: 10px;">${u.rio}</td>                        <td style="padding: 10px;">${u.nom} ${u.prenom}</td>                        <td style="padding: 10px;">${u.grade}</td>                        <td style="padding: 10px;">${u.role}${u.isRecruteur ? ' <span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-left:4px;">Recruteur</span>' : ''}</td>                        <td style="padding: 10px; font-size: 13px;">${escapeHtml(formatAccountSpecialiteLabel(u))}</td>                        <td style="padding: 10px;">                            <button class="btn btn-secondary btn-sm" onclick="editUser('${u.rio}')" title="Modifier"><i class="fas fa-edit"></i></button>                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.rio}')" title="Supprimer"><i class="fas fa-trash"></i></button>                        </td>                    </tr>                `,
-
-                    )
-
-                    .join('');
-
+                tableBody.innerHTML = [...allUsers].sort(compareUsersByGradeThenName).map(u => `
+                    <tr style="border-bottom: 1px solid var(--pm-border);">
+                        <td style="padding: 10px;">${u.rio}</td>
+                        <td style="padding: 10px;">${u.nom} ${u.prenom}</td>
+                        <td style="padding: 10px;">${u.grade}</td>
+                        <td style="padding: 10px;">${u.role}${u.isRecruteur ? ' <span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-left:4px;">Recruteur</span>' : ''}</td>
+                        <td style="padding: 10px; font-size: 13px;">${escapeHtml(formatAccountSpecialiteLabel(u))}</td>
+                        <td style="padding: 10px;">
+                            <button class="btn btn-secondary btn-sm" onclick="editUser('${u.rio}')" title="Modifier"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.rio}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
             }
-
         };
 
         window.deleteUser = (rio) => {
-
             if (rio.toString().toLowerCase() === 'admin') {
-
-                alert(
-
-                    'Impossible de supprimer le compte administrateur principal.',
-
-                );
-
+                alert('Impossible de supprimer le compte administrateur principal.');
                 return;
-
             }
-
-            if (
-
-                confirm(
-
-                    `Voulez-vous vraiment supprimer le compte RIO: ${rio} ?`,
-
-                )
-
-            ) {
-
+            if (confirm(`Voulez-vous vraiment supprimer le compte RIO: ${rio} ?`)) {
                 const data = pmLocalStorage.getItem(STORAGE_KEY);
-
                 let allUsers = data ? JSON.parse(data) : [];
-
-                allUsers = allUsers.filter(
-
-                    (u) =>
-
-                        u.rio.toString().toLowerCase() !==
-
-                        rio.toString().toLowerCase(),
-
-                );
-
+                allUsers = allUsers.filter(u => u.rio.toString().toLowerCase() !== rio.toString().toLowerCase());
                 pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
-
-                            if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
-loadAccounts();
-
+                if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
+                loadAccounts();
             }
-
         };
 
         window.editUser = (rio) => {
-
             const data = pmLocalStorage.getItem(STORAGE_KEY);
-
             const allUsers = data ? JSON.parse(data) : [];
-
-            const user = allUsers.find(
-
-                (u) =>
-
-                    u.rio.toString().toLowerCase() ===
-
-                    rio.toString().toLowerCase(),
-
-            );
-
+            const user = allUsers.find(u => u.rio.toString().toLowerCase() === rio.toString().toLowerCase());
             if (!user) return;
-
-            const formArea = document.getElementById(
-
-                'create-account-form-area',
-
-            );
-
+            const formArea = document.getElementById('create-account-form-area');
             const title = formArea.querySelector('.card-title');
-
             title.textContent = `Modifier le compte : ${rio}`;
-
             document.getElementById('new-rio').value = user.rio;
-
             document.getElementById('new-rio').disabled = true;
-
             document.getElementById('new-nom').value = user.nom;
-
             document.getElementById('new-prenom').value = user.prenom;
-
             document.getElementById('new-grade').value = user.grade;
-
             document.getElementById('new-role').value = user.role;
-
-            document.getElementById('new-is-recruteur').checked =
-
-                !!user.isRecruteur;
-
-            document.getElementById('new-temp-password').checked =
-
-                !!user.mustChangePassword;
-
-            document.getElementById('new-password').value = user.password;
-
+            document.getElementById('new-is-recruteur').checked = !!user.isRecruteur;
+            document.getElementById('new-password').value = user.password || '';
             const specEl = document.getElementById('new-specialite');
-
             if (specEl) specEl.value = normalizeAccountSpecialiteCode(user);
-
             const sa = document.getElementById('admin-serie-arme');
-
             const sp = document.getElementById('admin-serie-pie');
-
             const sl = document.getElementById('admin-serie-lbd');
-
             if (sa) sa.value = user.serieArmeService || '';
-
             if (sp) sp.value = user.seriePie || '';
-
             if (sl) sl.value = user.serieLbd || '';
-            // afficher photo existante si presente
-            const phImgEdit=document.getElementById('new-photo-img');
-            const phPrevEdit=document.getElementById('new-photo-preview');
-            if(phImgEdit && phPrevEdit){
-                if(user.photo && String(user.photo).startsWith('data:image')){
-                    phImgEdit.src=user.photo; phImgEdit.style.display='block';
-                    const ic=phPrevEdit.querySelector('i.fa-camera'); if(ic) ic.style.display='none';
-                } else {
-                    phImgEdit.style.display='none'; phImgEdit.removeAttribute('src');
-                    const ic=phPrevEdit.querySelector('i.fa-camera'); if(ic) ic.style.display='';
-                }
-            }
-
             formArea.style.display = 'block';
-
             formArea.dataset.mode = 'edit';
-
             formArea.scrollIntoView({ behavior: 'smooth' });
-
         };
 
-        contentArea.innerHTML = `            <div class="card">                <div class="card-header">                    <h2 class="card-title">Gestion des comptes</h2>                    <div style="display: flex; gap: 10px;">                        <button class="btn btn-secondary" id="btn-export-accounts" title="Sauvegarder les données"><i class="fas fa-download"></i> Export</button>                        <button class="btn btn-secondary" id="btn-import-accounts" title="Restaurer les données"><i class="fas fa-upload"></i> Import</button>                        <button class="btn btn-primary" id="btn-show-create-form"><i class="fas fa-plus"></i> Créer un compte</button>                    </div>                </div>                                <input type="file" id="import-file-input" style="display: none;" accept=".json">                <div id="create-account-form-area" style="display: none; margin-bottom: 30px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(15,23,42,0.08);">
-
-                    <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); padding:20px 24px; display:flex; align-items:center; gap:14px; color:#fff;">
-
-                        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#c9a227,#f0d060); display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:18px;"><i class="fas fa-user-plus"></i></div>
-
-                        <div><div style="font-size:15px; font-weight:800;">Créer un compte</div><div style="font-size:12px; opacity:0.8;">Nouvel agent — RIO auto-généré (7 chiffres) • identifiants à communiquer à l'agent</div></div>
-
-                        <button type="button" onclick="document.getElementById('create-account-form-area').style.display='none'" style="margin-left:auto; background:rgba(255,255,255,0.12); border:none; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer;"><i class="fas fa-times"></i></button>
-
+        contentArea.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Gestion des comptes</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" id="btn-export-accounts" title="Sauvegarder les données"><i class="fas fa-download"></i> Export</button>
+                        <button class="btn btn-secondary" id="btn-import-accounts" title="Restaurer les données"><i class="fas fa-upload"></i> Import</button>
+                        <button class="btn btn-primary" id="btn-show-create-form"><i class="fas fa-plus"></i> Créer un compte</button>
                     </div>
-
-                    <div style="padding:22px 24px;">
-
-                        <div style="display:grid; grid-template-columns:80px 1fr; gap:18px; align-items:start; margin-bottom:18px;">
-
-                            <div style="text-align:center;">
-
-                                <div style="width:72px; height:72px; border-radius:50%; background:#f1f5f9; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; margin:0 auto; overflow:hidden; position:relative;" id="new-photo-preview"><i class="fas fa-camera" style="color:#94a3b8;"></i><img id="new-photo-img" style="display:none; width:100%; height:100%; object-fit:cover;"></div>
-
-                                <label for="new-photo" style="display:inline-block; margin-top:8px; font-size:11px; color:#2563eb; cursor:pointer; font-weight:600;">Ajouter photo</label>
-
-                                <input type="file" id="new-photo" accept="image/*" style="display:none;">
-
-                                <div style="font-size:10px; color:#94a3b8; margin-top:2px;">JPG/PNG</div>
-
-                            </div>
-
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-
-                                <div><label style="font-size:11px; font-weight:700; color:#334155;">Nom <span style="color:#ef4444;">*</span></label><input type="text" id="new-nom" placeholder="MARTIN" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#f8fafc;"></div>
-
-                                <div><label style="font-size:11px; font-weight:700; color:#334155;">Prénom <span style="color:#ef4444;">*</span></label><input type="text" id="new-prenom" placeholder="Jean" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#f8fafc;"></div>
-
-                                <div><label style="font-size:11px; font-weight:700; color:#334155;">RIO <span style="color:#ef4444;">*</span></label><div style="display:flex; gap:6px; margin-top:6px;"><input type="text" id="new-rio" placeholder="Ex: 7654321 (7 chiffres) — laisser vide pour auto" style="flex:1; padding:11px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:13px; background:#f1f5f9; font-family:monospace; letter-spacing:0.05em; color:#0f172a;"><button type="button" id="btn-gen-rio" style="padding:11px 12px; background:#0f172a; color:#fff; border:none; border-radius:8px; cursor:pointer;" title="Générer un nouveau RIO"><i class="fas fa-rotate"></i></button></div></div>
-                                <div style="font-size:10px; color:#64748b; margin-top:4px;">Auto-généré si vide — vous pouvez saisir un RIO personnalisé (7 chiffres) pour certaines personnes</div>
-
-                            </div>
-
-                        </div>
-
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">Rôle</label><select id="new-role" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#fff;"><option value="Effectif">Effectif</option><option value="Direction">Direction</option></select></div>
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">Grade</label><select id="new-grade" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#fff;">${PM_GRADE_OPTIONS_HTML}</select></div>
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">Spécialité</label><select id="new-specialite" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#fff;">${PM_ACCOUNT_SPEC_SELECT_HTML}</select></div>
-
-                        </div>
-
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:14px;">
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">Arme SP22</label><input type="text" id="admin-serie-arme" placeholder="Série arme" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></div>
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">PIE</label><input type="text" id="admin-serie-pie" placeholder="Série PIE" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></div>
-
-                            <div><label style="font-size:11px; font-weight:700; color:#334155;">LBD</label><input type="text" id="admin-serie-lbd" placeholder="Série LBD" style="width:100%; margin-top:6px; padding:11px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></div>
-
-                        </div>
-
-                        <label style="display:flex; align-items:center; gap:8px; margin-top:16px; font-size:13px; cursor:pointer;"><input type="checkbox" id="new-is-recruteur" style="width:16px; height:16px;"> <span style="font-weight:600;">Recruteur / Formateur</span></label>
-
-                        <input type="hidden" id="new-password">
-
-                        <input type="hidden" id="new-temp-password" value="true">
-
-                    </div>
-
-                    <div style="display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-
-                        <button type="button" id="btn-cancel-form" style="padding:11px 18px; background:#fff; border:1px solid #cbd5e1; border-radius:8px; font-weight:600; cursor:pointer;">Annuler</button>
-
-                        <button type="button" id="btn-save-account" onclick="if(window._handleSaveAccount) window._handleSaveAccount(); return false;" style="padding:11px 22px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;"><i class="fas fa-check"></i> Créer le compte</button>
-
-                    </div>
-
                 </div>
-
-                <div id="accounts-list"></div>
-
+                <input type="file" id="import-file-input" style="display: none;" accept=".json">
+                <div id="create-account-form-area" style="display: none; margin-bottom: 30px; border: 1px solid #2563eb; padding: 20px; border-radius: 8px; background: rgba(37, 99, 235, 0.05);">
+                    <h3 class="card-title">Nouveau compte</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>RIO</label><input type="text" id="new-rio" placeholder="Ex: 123456"></div>
+                        <div class="form-group"><label>Nom</label><input type="text" id="new-nom" placeholder="Ex: MARTIN"></div>
+                        <div class="form-group"><label>Prénom</label><input type="text" id="new-prenom" placeholder="Ex: Jean"></div>
+                        <div class="form-group"><label>Grade</label><select id="new-grade" class="form-select-native">${PM_GRADE_OPTIONS_HTML}</select></div>
+                        <div class="form-group"><label>Spécialité</label><select id="new-specialite" class="form-select-native">${PM_ACCOUNT_SPEC_SELECT_HTML}</select></div>
+                        <div class="form-group"><label>Rôle</label><select id="new-role"><option value="Effectif">Effectif</option><option value="Direction">Direction</option></select></div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 8px; padding-top: 24px;">
+                            <input type="checkbox" id="new-is-recruteur" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="new-is-recruteur" style="cursor: pointer; font-weight: 600;">Recruteur / Formateur</label>
+                        </div>
+                        <div class="form-group"><label>Mot de passe</label><input type="password" id="new-password"></div>
+                    </div>
+                    <p class="dash-welcome-sub" style="margin: 18px 0 10px;">Numéros de série équipement</p>
+                    <div class="fiche-agent-series fiche-agent-series--admin" role="group" aria-label="Numéros de série équipement du compte">
+                        <div class="fiche-agent-serie-block">
+                            <span class="fiche-agent-serie-label">Numéro Série Arme De Service (SP22)</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-arme" placeholder="Série arme" autocomplete="off">
+                        </div>
+                        <div class="fiche-agent-serie-block">
+                            <span class="fiche-agent-serie-label">Numéro Série PIE</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-pie" placeholder="Série PIE" autocomplete="off">
+                        </div>
+                        <div class="fiche-agent-serie-block">
+                            <span class="fiche-agent-serie-label">Numéro Série LBD</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-lbd" placeholder="Série LBD" autocomplete="off">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn btn-success" id="btn-save-account">Créer / Sauvegarder</button>
+                        <button class="btn btn-secondary" id="btn-cancel-form">Annuler</button>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>RIO</th><th>Nom & Prénom</th><th>Grade</th><th>Rôle</th><th>Spécialité</th><th>Actions</th></tr></thead>
+                    <tbody id="accounts-table-body"></tbody>
+                </table>
+            </div>
         `;
 
         loadAccounts();
 
         document.getElementById('btn-show-create-form').onclick = () => {
-
-            const formArea = document.getElementById(
-
-                'create-account-form-area',
-
-            );
-
+            const formArea = document.getElementById('create-account-form-area');
             formArea.style.display = 'block';
-
             formArea.dataset.mode = 'create';
-
-            formArea.querySelector('.card-title').textContent =
-
-                'Nouveau compte -- Panel création';
-
-            const rioEl = document.getElementById('new-rio');
-            if(rioEl){
-                rioEl.removeAttribute('disabled');
-                rioEl.readOnly = false;
-                rioEl.placeholder = 'Génération auto...';
-                let newRio = '';
-                try{ newRio = generateUniqueRIO(); }catch(e){ newRio = String(Date.now()).slice(-7); }
-                if(!newRio || newRio.length!==7) newRio = String(Math.floor(1000000+Math.random()*9000000));
-                rioEl.value = newRio;
-                rioEl.style.background='#fff';
-                rioEl.style.color='#0f172a';
-                console.info('[PM] RIO auto-généré', newRio, 'existing?', rioEl.value);
-                // fallback vérif après 300ms
-                setTimeout(()=>{ const el=document.getElementById('new-rio'); if(el && !el.value){ const r2=String(Math.floor(1000000+Math.random()*9000000)); el.value=r2; console.info('[PM] RIO fallback',r2); } }, 300);
-            }
-            // Fallback direct onclick pour Créer le compte (si délégation échoue)
-            const _saveBtnDirect = document.getElementById('btn-save-account');
-            if(_saveBtnDirect && window._handleSaveAccount){
-                _saveBtnDirect.onclick = function(e){ e.preventDefault(); console.info('[PM] Direct click Créer'); window._handleSaveAccount(); return false; };
-            }
-            const genBtn = document.getElementById('btn-gen-rio');
-            if(genBtn){
-                genBtn.title='Générer un nouveau RIO (7 chiffres)';
-                genBtn.type='button';
-                // délégation robuste + direct
-                genBtn.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); let r=''; try{ r=generateUniqueRIO(); }catch(e){ r=String(Date.now()).slice(-7); } if(!r || r.length!==7) r=String(Math.floor(1000000+Math.random()*9000000)); const el=document.getElementById('new-rio'); if(el){ el.value=r; el.focus(); try{ el.select(); }catch(e){} el.style.background='#dcfce7'; setTimeout(()=>{el.style.background='#fff';},600); } console.info('[PM] RIO régénéré',r); return false; };
-            }
-            // délégation globale au cas où le bouton est recréé par loadAccounts
-            if(!window._rioDelegationBound){
-                window._rioDelegationBound=true;
-                document.addEventListener('click', function(e){
-                    const b=e.target.closest && e.target.closest('#btn-gen-rio');
-                    if(!b) return;
-                    e.preventDefault();
-                    let r=''; try{ r=generateUniqueRIO(); }catch(e){ r=String(Date.now()).slice(-7); }
-                    const el=document.getElementById('new-rio');
-                    if(el){ el.value=r; el.focus(); }
-                    console.info('[PM] RIO via délégation',r);
-                });
-            }
-
+            formArea.querySelector('.card-title').textContent = 'Nouveau compte';
+            document.getElementById('new-rio').disabled = false;
+            document.getElementById('new-rio').value = '';
             document.getElementById('new-nom').value = '';
-
             document.getElementById('new-prenom').value = '';
-
             document.getElementById('new-grade').value = 'DPM';
-
             document.getElementById('new-role').value = 'Effectif';
-
             document.getElementById('new-is-recruteur').checked = false;
-
-            document.getElementById('new-temp-password').checked = false;
-
             document.getElementById('new-password').value = '';
-
             const specReset = document.getElementById('new-specialite');
-
             if (specReset) specReset.value = '';
-
             const sa = document.getElementById('admin-serie-arme');
-
             const sp = document.getElementById('admin-serie-pie');
-
             const sl = document.getElementById('admin-serie-lbd');
-
             if (sa) sa.value = '';
-
             if (sp) sp.value = '';
-
             if (sl) sl.value = '';
-            // reset photo preview
-            const phImg=document.getElementById('new-photo-img');
-            const phPrev=document.getElementById('new-photo-preview');
-            if(phImg){ phImg.style.display='none'; phImg.removeAttribute('src'); }
-            if(phPrev){ const ic=phPrev.querySelector('i.fa-camera'); if(ic) ic.style.display=''; }
-            // handler photo upload (une seule fois)
-            const phInput=document.getElementById('new-photo');
-            if(phInput && !phInput.dataset.bound){
-                phInput.dataset.bound='1';
-                phInput.addEventListener('change', (e)=>{
-                    const file=e.target.files && e.target.files[0];
-                    if(!file) return;
-                    if(file.size>2*1024*1024){ alert('Image trop lourde (max 2 Mo)'); e.target.value=''; return; }
-                    const fr=new FileReader();
-                    fr.onload=(ev)=>{
-                        const dataUrl=ev.target.result;
-                        const img=document.getElementById('new-photo-img');
-                        const prev=document.getElementById('new-photo-preview');
-                        if(img){ img.src=dataUrl; img.style.display='block'; }
-                        if(prev){ const ic=prev.querySelector('i.fa-camera'); if(ic) ic.style.display='none'; }
-                    };
-                    fr.readAsDataURL(file);
-                });
-            }
-            // auto-scroll pour rendre le bouton "Créer le compte" visible
-            setTimeout(function(){
-                try{
-                    formArea.scrollIntoView({behavior:'smooth', block:'start'});
-                    const mc=document.querySelector('.main-content');
-                    if(mc) mc.scrollTo({top: mc.scrollHeight, behavior:'smooth'});
-                    else window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'});
-                }catch(e){}
-            }, 120);
-
         };
 
         document.getElementById('btn-cancel-form').onclick = () => {
-
-            document.getElementById('create-account-form-area').style.display =
-
-                'none';
-
+            document.getElementById('create-account-form-area').style.display = 'none';
         };
 
-        const btnGenPwd = document.getElementById('btn-gen-temp-pwd');
-        if (btnGenPwd) btnGenPwd.onclick = () => {
-
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%&*';
-
-            let pwd = '';
-
-            for (let i = 0; i < 10; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-
-            document.getElementById('new-password').value = pwd;
-
-            document.getElementById('new-temp-password').checked = true;
-
-        };
-
-        window._handleSaveAccount = () => {
-            console.info('[PM] _handleSaveAccount start');
-            try{
-            const formArea = document.getElementById(
-
-                'create-account-form-area',
-
-            );
-            if(!formArea){ alert('Formulaire introuvable'); return; }
+        document.getElementById('btn-save-account').onclick = () => {
+            const formArea = document.getElementById('create-account-form-area');
             const mode = formArea.dataset.mode;
-
             const rio = document.getElementById('new-rio').value.trim();
-
             const nom = document.getElementById('new-nom').value.trim();
-
             const prenom = document.getElementById('new-prenom').value.trim();
-
             const grade = document.getElementById('new-grade').value;
-
             const role = document.getElementById('new-role').value;
-
-            // Mot de passe temporaire auto-généré comme dans la maquette
-
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%&*';
-
-            let password = '';
-
-            for(let i=0;i<10;i++) password += chars.charAt(Math.floor(Math.random()*chars.length));
-
-            // Email non demandé à la création — sera saisi à la 1ère connexion (renderSetup)
-            const email = '';
-
-            const photoImg = document.getElementById('new-photo-img');
-            const photo = (photoImg && photoImg.src && photoImg.src.startsWith('data:image')) ? photoImg.src : '';
-
-            const specRaw =
-                document.getElementById('new-specialite')?.value ?? '';
-
+            const password = document.getElementById('new-password').value;
+            const specRaw = document.getElementById('new-specialite')?.value ?? '';
             const specialites = specRaw ? [specRaw] : [];
-
-            const serieArmeService =
-
-                document.getElementById('admin-serie-arme')?.value.trim() ?? '';
-
-            const seriePie =
-
-                document.getElementById('admin-serie-pie')?.value.trim() ?? '';
-
-            const serieLbd =
-
-                document.getElementById('admin-serie-lbd')?.value.trim() ?? '';
-
-            const isRecruteur =
-
-                document.getElementById('new-is-recruteur')?.checked === true;
-
-            const isTempPassword = true;
-
-            if (!rio || !nom || !prenom) {
-
-                alert('Veuillez remplir Nom, Prénom et RIO.');
-
+            const serieArmeService = document.getElementById('admin-serie-arme')?.value.trim() ?? '';
+            const seriePie = document.getElementById('admin-serie-pie')?.value.trim() ?? '';
+            const serieLbd = document.getElementById('admin-serie-lbd')?.value.trim() ?? '';
+            const isRecruteur = document.getElementById('new-is-recruteur')?.checked === true;
+            if (!rio || !nom || !prenom || !password) {
+                alert('Veuillez remplir tous les champs.');
                 return;
-
             }
-
-            // RIO affiché comme RIO-GL-2026-0001 mais stocké en 7 chiffres : on extrait les chiffres
-
-            let rioStore = rio.replace(/\D/g,'').slice(-7);
-
-            if(!/^\d{7}$/.test(rioStore)){
-
-                // si RIO est au format 7 chiffres déjà, on le garde
-
-                if(/^\d{7}$/.test(rio)) rioStore = rio;
-
-                else { alert('RIO invalide -- génération d\'un nouveau RIO.'); rioStore = generateUniqueRIO(); }
-
-            }
-
-            // vérifie unicité sur rioStore
-
             const data = pmLocalStorage.getItem(STORAGE_KEY);
-
             let allUsers = data ? JSON.parse(data) : [];
-
-            // Utilise rioStore pour le stockage
-
-            const rioFinal = typeof rioStore !== 'undefined' ? rioStore : rio;
-
             if (mode === 'create') {
-
-                if (allUsers.some((u) => u.rio.toString() === rioFinal)) {
-
-                    alert('Ce RIO existe déjà ! Génération d\'un nouveau.');
-
-                    const ng = generateUniqueRIO();
-
-                    document.getElementById('new-rio').value = ng;
-
+                if (allUsers.some(u => u.rio.toString() === rio)) {
+                    alert('Ce RIO existe déjà !');
                     return;
-
                 }
-
-                allUsers.push({
-
-                    rio: rioFinal,
-
-                    nom,
-
-                    prenom,
-
-                    grade,
-
-                    role,
-
-                    isRecruteur,
-
-                    password,
-
-                    mustChangePassword: true,
-
-                    email: '',
-
-                    photo: photo,
-
-                    specialites,
-
-                    serieArmeService,
-
-                    seriePie,
-
-                    serieLbd,
-
-                    webhookUrl: '',
-
-                });
-
-                console.info('[PM] Compte créé — RIO', rioFinal, 'mot de passe temporaire', password, '— email sera saisi à la 1ère connexion');
-
-                // Auto-création trame stagiaire si grade STG
-
-                if (grade === 'STG') {
-
-                    const TRAME_KEY = 'PM_TRAME_STAGIAIRE';
-
-                    try {
-
-                        const trames = JSON.parse(pmLocalStorage.getItem(TRAME_KEY) || '[]');
-
-                        const exists = trames.some(r => String(r.matricule||'') === String(rio) || (String(r.nom||'').toLowerCase()===String(nom).toLowerCase() && String(r.prenom||'').toLowerCase()===String(prenom).toLowerCase()));
-
-                        if (!exists) {
-
-                            trames.push({
-
-                                id: Date.now().toString(),
-
-                                nom, prenom, matricule: rio,
-
-                                debut: '', tuteur: '', gradeTuteur: '',
-
-                                dateGarde: new Date().toISOString().split('T')[0],
-
-                                unite: '', indicatif: '', horaires: '', vehicule: '',
-
-                                types: [], heurePrise: '', briefing: '', consignes: '',
-
-                                missions: '', nbInter: '0', inters: [], interPrincipale: '',
-
-                                competences: {}, pointsPos: '', pointsAmel: '', appreciation: '',
-
-                                heureFin: '', webhook: currentUser.webhookUrl||'', auteur: currentUser.rio, createdAt: new Date().toISOString()
-
-                            });
-
-                            pmLocalStorage.setItem(TRAME_KEY, JSON.stringify(trames));
-
-                        }
-
-                    } catch(e) {}
-
-                }
-
+                allUsers.push({ rio, nom, prenom, grade, role, isRecruteur, password, specialites, serieArmeService, seriePie, serieLbd });
             } else {
-
-                const index = allUsers.findIndex(
-
-                    (u) => u.rio.toString() === rio,
-
-                );
-
+                const index = allUsers.findIndex(u => u.rio.toString() === rio);
                 if (index !== -1) {
-
-                    const oldGrade = String(allUsers[index].grade||'');
-
-                    // si une nouvelle photo a été sélectionnée, on l'enregistre
-                    const newPhotoVal = (typeof photo !== 'undefined' && photo && String(photo).startsWith('data:image')) ? photo : allUsers[index].photo || '';
-                    allUsers[index] = {
-
-                        ...allUsers[index],
-
-                        nom,
-
-                        prenom,
-
-                        grade,
-
-                        role,
-
-                        isRecruteur,
-
-                        password,
-
-                        photo: newPhotoVal,
-
-                        specialites,
-
-                        serieArmeService,
-
-                        seriePie,
-
-                        serieLbd,
-
-                    };
-
-                    // Suppression espace trame si passage STG -> GRT
-
-                    if (oldGrade === 'STG' && grade === 'GRT') {
-
-                        try {
-
-                            const TRK = 'PM_TRAME_STAGIAIRE';
-
-                            const trames = JSON.parse(pmLocalStorage.getItem(TRK)||'[]');
-
-                            const filtered = trames.filter(r=> String(r.matricule||'') !== String(rio) && !(String(r.nom||'').toLowerCase()===String(nom).toLowerCase() && String(r.prenom||'').toLowerCase()===String(prenom).toLowerCase()));
-
-                            if(filtered.length !== trames.length){
-
-                                pmLocalStorage.setItem(TRK, JSON.stringify(filtered));
-
-                                console.info('[PM] Espace trame stagiaire supprimé pour', rio);
-
-                            }
-
-                        } catch(e){}
-
-                    }
-
+                    allUsers[index] = { ...allUsers[index], nom, prenom, grade, role, isRecruteur, password, specialites, serieArmeService, seriePie, serieLbd };
                 }
-
             }
-
             pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
-
-                        if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
-const savedRow = allUsers.find((u) => u.rio.toString() === rio);
-
+            if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
+            const savedRow = allUsers.find(u => u.rio.toString() === rio);
             if (savedRow && String(savedRow.rio) === String(currentUser.rio)) {
-
                 currentUser = savedRow;
-
                 sessionStorage.setItem('currentUser', JSON.stringify(savedRow));
-
                 updateUI(currentUser);
-
             }
-
-            addLog(
-                mode === 'create' ? 'Création compte' : 'Modification compte',
-                `${nom} ${prenom} (RIO ${mode==='create'?rioFinal:rio})`,
-            );
-            if(mode==='create'){
-                // Afficher les identifiants à communiquer — email sera demandé à la 1ère connexion
-                alert(`Compte créé !\n\nRIO : ${rioFinal}\nMot de passe temporaire : ${password}\n\nCommuniquez ces identifiants à l'agent.\nL'email, téléphone et Discord seront complétés à sa première connexion.`);
-            } else {
-                alert('Compte sauvegardé !');
-            }
-
+            addLog(mode === 'create' ? 'Création compte' : 'Modification compte', nom + ' ' + prenom);
+            alert('Compte sauvegardé !');
             loadAccounts();
-
             void syncPersonnelFichesGridsFromServer().catch(() => {});
-
-            document.getElementById('create-account-form-area').style.display =
-
-                'none';
-            }catch(err){ console.error('[PM] Erreur création compte', err); alert('Erreur: '+(err && err.message ? err.message : err)); }
-
+            document.getElementById('create-account-form-area').style.display = 'none';
         };
-
-        if(!window._saveAccountBound){
-            window._saveAccountBound=true;
-            document.addEventListener('click', function(e){
-                const btn=e.target.closest && e.target.closest('#btn-save-account');
-                if(!btn) return;
-                e.preventDefault();
-                console.info('[PM] Click Créer le compte délégué');
-                if(typeof window._handleSaveAccount==='function') window._handleSaveAccount();
-            });
-        }
 
         document.getElementById('btn-export-accounts').onclick = () => {
-
             const data = pmLocalStorage.getItem(STORAGE_KEY);
-
             const blob = new Blob([data], { type: 'application/json' });
-
             const url = URL.createObjectURL(blob);
-
             const a = document.createElement('a');
-
             a.href = url;
-
             a.download = 'intranet_pm_comptes.json';
-
             a.click();
-
             URL.revokeObjectURL(url);
-
         };
 
         document.getElementById('btn-import-accounts').onclick = () => {
-
             document.getElementById('import-file-input').click();
-
         };
 
-        document
-
-            .getElementById('import-file-input')
-
-            .addEventListener('change', (e) => {
-
-                const file = e.target.files[0];
-
-                if (file) {
-
-                    const reader = new FileReader();
-
-                    reader.onload = (event) => {
-
-                        try {
-
-                            const data = JSON.parse(event.target.result);
-
-                            pmLocalStorage.setItem(
-
-                                STORAGE_KEY,
-
-                                JSON.stringify(data),
-
-                            );
-
-                            alert('Import réussi !');
-
-                            loadAccounts();
-
-                            void syncPersonnelFichesGridsFromServer().catch(
-
-                                () => {},
-
-                            );
-
-                        } catch (err) {
-
-                            alert(
-
-                                "Erreur lors de l'import : fichier invalide.",
-
-                            );
-
-                        }
-
-                    };
-
-                    reader.readAsText(file);
-
-                }
-
-            });
-
+        document.getElementById('import-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
+                        alert('Import réussi !');
+                        loadAccounts();
+                        void syncPersonnelFichesGridsFromServer().catch(() => {});
+                    } catch (err) {
+                        alert("Erreur lors de l'import : fichier invalide.");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
     }
 
     function renderGestionWebhooks() {
