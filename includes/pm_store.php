@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/pm_turso.php';
+
 const PM_ROLES_DIRECTION = 'Direction';
 const PM_ROLES_EFFECTIF = 'Effectif';
 
@@ -111,11 +113,33 @@ function pm_default_store(): array
     return [PM_STORAGE_KEY => json_encode(pm_initial_accounts(), JSON_UNESCAPED_UNICODE)];
 }
 
+function pm_is_vercel(): bool
+{
+    return str_contains($_SERVER['VERCEL_URL'] ?? '', 'vercel.app')
+        || str_contains($_SERVER['VERCEL_ENV'] ?? '', 'production');
+}
+
 /**
  * @return array<string, mixed>
  */
 function pm_read_store(): array
 {
+    if (pm_is_vercel()) {
+        try {
+            pm_turso_init_tables();
+            $all = pm_turso_kv_get_all();
+            if ($all !== []) {
+                return $all;
+            }
+            // First time: seed Turso from default accounts
+            $d = pm_default_store();
+            pm_turso_kv_set_all($d);
+            return $d;
+        } catch (\Throwable $e) {
+            error_log('[PM TURSO] read_store failed: ' . $e->getMessage());
+        }
+    }
+    // Local file fallback
     pm_ensure_data_dir();
     $path = pm_store_path();
     if (!is_file($path)) {
@@ -139,6 +163,16 @@ function pm_read_store(): array
  */
 function pm_write_store(array $store): void
 {
+    if (pm_is_vercel()) {
+        try {
+            pm_turso_init_tables();
+            pm_turso_kv_set_all($store);
+            return;
+        } catch (\Throwable $e) {
+            error_log('[PM TURSO] write_store failed: ' . $e->getMessage());
+        }
+    }
+    // Local file fallback
     pm_ensure_data_dir();
     file_put_contents(pm_store_path(), json_encode($store, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 }
