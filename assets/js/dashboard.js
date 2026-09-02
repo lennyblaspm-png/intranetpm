@@ -8144,13 +8144,9 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
     }
 
     function renderGestionComptes() {
-
         if (!isPmTriadeLead(currentUser)) {
-
             contentArea.innerHTML = `<div class="card"><p>Accès réservé à la tête de triade : grades DPM, DRA ou CDP avec le rôle Direction.</p></div>`;
-
             return;
-
         }
 
         const loadAccounts = () => {
@@ -8194,8 +8190,10 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             const allUsers = data ? JSON.parse(data) : [];
             const user = allUsers.find(u => u.rio.toString().toLowerCase() === rio.toString().toLowerCase());
             if (!user) return;
+
             const formArea = document.getElementById('create-account-form-area');
             const title = formArea.querySelector('.card-title');
+
             title.textContent = `Modifier le compte : ${rio}`;
             document.getElementById('new-rio').value = user.rio;
             document.getElementById('new-rio').disabled = true;
@@ -8204,7 +8202,7 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             document.getElementById('new-grade').value = user.grade;
             document.getElementById('new-role').value = user.role;
             document.getElementById('new-is-recruteur').checked = !!user.isRecruteur;
-            document.getElementById('new-password').value = user.password || '';
+            document.getElementById('new-password').value = user.password;
             const specEl = document.getElementById('new-specialite');
             if (specEl) specEl.value = normalizeAccountSpecialiteCode(user);
             const sa = document.getElementById('admin-serie-arme');
@@ -8213,6 +8211,7 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             if (sa) sa.value = user.serieArmeService || '';
             if (sp) sp.value = user.seriePie || '';
             if (sl) sl.value = user.serieLbd || '';
+
             formArea.style.display = 'block';
             formArea.dataset.mode = 'edit';
             formArea.scrollIntoView({ behavior: 'smooth' });
@@ -8228,35 +8227,49 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                         <button class="btn btn-primary" id="btn-show-create-form"><i class="fas fa-plus"></i> Créer un compte</button>
                     </div>
                 </div>
+                
                 <input type="file" id="import-file-input" style="display: none;" accept=".json">
-                <div id="create-account-form-area" style="display: none; margin-bottom: 30px; border: 1px solid #2563eb; padding: 20px; border-radius: 8px; background: rgba(37, 99, 235, 0.05);">
+
+                <div id="create-account-form-area" style="display: none; margin-bottom: 30px; border: 1px solid var(--pm-blue); padding: 20px; border-radius: 8px; background: rgba(26, 115, 232, 0.05);">
                     <h3 class="card-title">Nouveau compte</h3>
                     <div class="form-grid">
                         <div class="form-group"><label>RIO</label><input type="text" id="new-rio" placeholder="Ex: 123456"></div>
                         <div class="form-group"><label>Nom</label><input type="text" id="new-nom" placeholder="Ex: MARTIN"></div>
                         <div class="form-group"><label>Prénom</label><input type="text" id="new-prenom" placeholder="Ex: Jean"></div>
-                        <div class="form-group"><label>Grade</label><select id="new-grade" class="form-select-native">${PM_GRADE_OPTIONS_HTML}</select></div>
-                        <div class="form-group"><label>Spécialité</label><select id="new-specialite" class="form-select-native">${PM_ACCOUNT_SPEC_SELECT_HTML}</select></div>
-                        <div class="form-group"><label>Rôle</label><select id="new-role"><option value="Effectif">Effectif</option><option value="Direction">Direction</option></select></div>
+                        <div class="form-group">
+                            <label>Grade</label>
+                            <select id="new-grade" class="form-select-native">${PM_GRADE_OPTIONS_HTML}</select>
+                        </div>
+                        <div class="form-group">
+                            <label>Spécialité</label>
+                            <select id="new-specialite" class="form-select-native">${PM_ACCOUNT_SPEC_SELECT_HTML}</select>
+                        </div>
+                        <div class="form-group">
+                            <label>Rôle</label>
+                            <select id="new-role">
+                                <option value="Effectif">Effectif</option>
+                                <option value="Direction">Direction</option>
+                            </select>
+                        </div>
                         <div class="form-group" style="display: flex; align-items: center; gap: 8px; padding-top: 24px;">
                             <input type="checkbox" id="new-is-recruteur" style="width: 18px; height: 18px; cursor: pointer;">
                             <label for="new-is-recruteur" style="cursor: pointer; font-weight: 600;">Recruteur / Formateur</label>
                         </div>
                         <div class="form-group"><label>Mot de passe</label><input type="password" id="new-password"></div>
                     </div>
-                    <p class="dash-welcome-sub" style="margin: 18px 0 10px;">Numéros de série équipement</p>
+                    <p class="dash-welcome-sub" style="margin: 18px 0 10px;">Numéros de série équipement (visibles sur la fiche agent et dans la recherche effectif)</p>
                     <div class="fiche-agent-series fiche-agent-series--admin" role="group" aria-label="Numéros de série équipement du compte">
                         <div class="fiche-agent-serie-block">
-                            <span class="fiche-agent-serie-label">Numéro Série Arme De Service (SP22)</span>
-                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-arme" placeholder="Série arme" autocomplete="off">
+                            <span class="fiche-agent-serie-label">Numéro Série De Votre Arme De Service&nbsp;: Sig Sauer SP 22</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-arme" placeholder="Ex&nbsp;: 969506POL593010" autocomplete="off">
                         </div>
                         <div class="fiche-agent-serie-block">
-                            <span class="fiche-agent-serie-label">Numéro Série PIE</span>
-                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-pie" placeholder="Série PIE" autocomplete="off">
+                            <span class="fiche-agent-serie-label">Numéro Série De Votre PIE&nbsp;: Pistolet A Impulsion Electrique</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-pie" placeholder="Ex&nbsp;: 969506POL593010" autocomplete="off">
                         </div>
                         <div class="fiche-agent-serie-block">
-                            <span class="fiche-agent-serie-label">Numéro Série LBD</span>
-                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-lbd" placeholder="Série LBD" autocomplete="off">
+                            <span class="fiche-agent-serie-label">Numéro Série De Votre LBD&nbsp;: Lanceur De Balles De Défense</span>
+                            <input type="text" class="fiche-agent-serie-input" id="admin-serie-lbd" placeholder="Ex&nbsp;: 969506POL593010" autocomplete="off">
                         </div>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 15px;">
@@ -8264,8 +8277,18 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                         <button class="btn btn-secondary" id="btn-cancel-form">Annuler</button>
                     </div>
                 </div>
+
                 <table>
-                    <thead><tr><th>RIO</th><th>Nom & Prénom</th><th>Grade</th><th>Rôle</th><th>Spécialité</th><th>Actions</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>RIO</th>
+                            <th>Nom & Prénom</th>
+                            <th>Grade</th>
+                            <th>Rôle</th>
+                            <th>Spécialité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
                     <tbody id="accounts-table-body"></tbody>
                 </table>
             </div>
@@ -8315,33 +8338,61 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
             const seriePie = document.getElementById('admin-serie-pie')?.value.trim() ?? '';
             const serieLbd = document.getElementById('admin-serie-lbd')?.value.trim() ?? '';
             const isRecruteur = document.getElementById('new-is-recruteur')?.checked === true;
+
             if (!rio || !nom || !prenom || !password) {
                 alert('Veuillez remplir tous les champs.');
                 return;
             }
+
             const data = pmLocalStorage.getItem(STORAGE_KEY);
             let allUsers = data ? JSON.parse(data) : [];
+
             if (mode === 'create') {
                 if (allUsers.some(u => u.rio.toString() === rio)) {
                     alert('Ce RIO existe déjà !');
                     return;
                 }
-                allUsers.push({ rio, nom, prenom, grade, role, isRecruteur, password, specialites, serieArmeService, seriePie, serieLbd });
+                allUsers.push({
+                    rio,
+                    nom,
+                    prenom,
+                    grade,
+                    role,
+                    isRecruteur,
+                    password,
+                    specialites,
+                    serieArmeService,
+                    seriePie,
+                    serieLbd,
+                });
             } else {
                 const index = allUsers.findIndex(u => u.rio.toString() === rio);
                 if (index !== -1) {
-                    allUsers[index] = { ...allUsers[index], nom, prenom, grade, role, isRecruteur, password, specialites, serieArmeService, seriePie, serieLbd };
+                    allUsers[index] = {
+                        ...allUsers[index],
+                        nom,
+                        prenom,
+                        grade,
+                        role,
+                        isRecruteur,
+                        password,
+                        specialites,
+                        serieArmeService,
+                        seriePie,
+                        serieLbd,
+                    };
                 }
             }
+
             pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
-            if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
+                if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
             const savedRow = allUsers.find(u => u.rio.toString() === rio);
             if (savedRow && String(savedRow.rio) === String(currentUser.rio)) {
                 currentUser = savedRow;
                 sessionStorage.setItem('currentUser', JSON.stringify(savedRow));
                 updateUI(currentUser);
             }
-            addLog(mode === 'create' ? 'Création compte' : 'Modification compte', nom + ' ' + prenom);
+            addLog(mode === 'create' ? "Création compte" : "Modification compte", `${nom} ${prenom}`);
             alert('Compte sauvegardé !');
             loadAccounts();
             void syncPersonnelFichesGridsFromServer().catch(() => {});
@@ -8371,12 +8422,11 @@ try{ const _nt = (typeof type !== 'undefined' ? type : (typeof rapportType !== '
                     try {
                         const data = JSON.parse(event.target.result);
                         pmLocalStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                        if(window.pmPersistNow) try{ window.pmPersistNow(); }catch(e){}
                         alert('Import réussi !');
                         loadAccounts();
                         void syncPersonnelFichesGridsFromServer().catch(() => {});
                     } catch (err) {
-                        alert("Erreur lors de l'import : fichier invalide.");
+                        alert('Erreur lors de l\'import : fichier invalide.');
                     }
                 };
                 reader.readAsText(file);
