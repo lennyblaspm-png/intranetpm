@@ -128,7 +128,48 @@ $path = pm_normalize_uri_path($rawPath, $pmHostingConfig);
 
 // Normaliser /api et /api/...
 if (!str_starts_with($path, '/api')) {
-    pm_json_response(['error' => 'Not found.'], 404);
+// GET /api/debug/turso — test Turso connection (direction only)
+if ($method === 'GET' && $sub === '/debug/turso') {
+    pm_require_session();
+    $store = pm_read_store();
+    $actor = pm_auth_user_from_session($store);
+    if (!pm_is_triade_lead($actor)) {
+        pm_json_response(['error' => 'Accès refusé.'], 403);
+    }
+    $results = [];
+    // Test 1: init tables
+    try {
+        pm_turso_init_tables();
+        $results['init'] = 'OK';
+    } catch (\Throwable $e) {
+        $results['init'] = 'FAIL: ' . $e->getMessage();
+    }
+    // Test 2: write a test key
+    try {
+        pm_turso_kv_set('_test_debug', gmdate('c'));
+        $results['write'] = 'OK';
+    } catch (\Throwable $e) {
+        $results['write'] = 'FAIL: ' . $e->getMessage();
+    }
+    // Test 3: read it back
+    try {
+        $val = pm_turso_kv_get('_test_debug');
+        $results['read'] = $val !== null ? 'OK: ' . $val : 'NULL';
+    } catch (\Throwable $e) {
+        $results['read'] = 'FAIL: ' . $e->getMessage();
+    }
+    // Test 4: read all
+    try {
+        $all = pm_turso_kv_get_all();
+        $results['read_all'] = 'OK: ' . count($all) . ' keys';
+        $results['keys'] = array_keys($all);
+    } catch (\Throwable $e) {
+        $results['read_all'] = 'FAIL: ' . $e->getMessage();
+    }
+    pm_json_response($results);
+}
+
+pm_json_response(['error' => 'Not found.'], 404);
 }
 
 $sub = substr($path, strlen('/api'));
