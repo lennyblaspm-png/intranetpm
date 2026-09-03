@@ -1,55 +1,55 @@
 /**
- * Miroir localStorage → API serveur (data/store.json) + backup localStorage navigateur.
- * Le localStorage navigateur sert de backup : si le serveur perd les données
- * (cold start Vercel), le navigateur restaure depuis son propre localStorage.
+ * Miroir localStorage → API serveur.
+ * Le navigateur EST la source de vérité pour les comptes.
+ * Le serveur est un backup secondaire (best-effort).
  */
 (function () {
   const mem = {};
-  const LOCAL_BACKUP_KEY = 'PM_INTRANET_BACKUP_STORE';
+  const BACKUP_KEY = 'PM_INTRANET_BACKUP_STORE';
   let persistTimer = null;
 
-  /** Sauvegarde dans le vrai localStorage du navigateur (backup local). */
-  function saveToBrowserBackup() {
+  function saveBackup() {
     try {
       const data = {};
       for (const [k, v] of Object.entries(mem)) {
         if (typeof v === 'string') data[k] = v;
       }
-      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(data));
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(data));
     } catch (_) {}
   }
 
-  /** Restaure depuis le vrai localStorage du navigateur (backup local). */
-  function loadFromBrowserBackup() {
+  function loadBackup() {
     try {
-      const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+      const raw = localStorage.getItem(BACKUP_KEY);
       if (!raw) return null;
       return JSON.parse(raw);
     } catch (_) { return null; }
   }
 
   function persist() {
+    saveBackup();
     const body = JSON.stringify(mem);
-    console.info('[PM DEBUG] Persist async storage', { keys: Object.keys(mem).length });
-    saveToBrowserBackup();
+    console.info('[PM DEBUG] Persist', { keys: Object.keys(mem).length });
     return fetch('api/storage', {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body
-    }).catch(() => {});
+    }).catch(function(e) {
+      console.warn('[PM DEBUG] Persist serveur échoué (pas grave, backup local OK)', e && e.message);
+    });
   }
 
   function schedulePersist() {
     if (persistTimer) clearTimeout(persistTimer);
-    persistTimer = setTimeout(() => {
+    persistTimer = setTimeout(function() {
       persistTimer = null;
       void persist();
-    }, 120);
+    }, 150);
   }
 
-  window.pmPersistNow = function pmPersistNow(){
-    if(persistTimer){ clearTimeout(persistTimer); persistTimer=null; }
+  window.pmPersistNow = function pmPersistNow() {
+    if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
     return persist();
   };
 
@@ -61,26 +61,12 @@
     }
   };
 
+  // NE JAMAIS écraser les données navigateur avec le serveur
   window.pmReloadStorageFromServer = async function pmReloadStorageFromServer() {
     if (typeof window.pmFlushPendingStorage === 'function') {
       await window.pmFlushPendingStorage();
     }
-    const stRes = await fetch('api/storage', { credentials: 'same-origin' });
-    if (!stRes.ok) return false;
-    const data = await stRes.json();
-
-    const serverAccounts = parseAccounts(data['PM_INTRANET_OFFICIAL_ACCOUNTS']);
-    const backup = loadFromBrowserBackup();
-    const backupAccounts = backup ? parseAccounts(backup['PM_INTRANET_OFFICIAL_ACCOUNTS']) : [];
-
-    if (backupAccounts.length > serverAccounts.length) {
-      console.info('[PM DEBUG] pullServer: backup plus récent (' + backupAccounts.length + '>' + serverAccounts.length + ') — on garde le backup');
-      return true;
-    }
-
-    Object.keys(mem).forEach((k) => delete mem[k]);
-    Object.assign(mem, data);
-    saveToBrowserBackup();
+    // Ne fait RIEN — le navigateur EST la source de vérité
     return true;
   };
 
@@ -90,106 +76,111 @@
       persistTimer = null;
     }
     if (Object.keys(mem).length === 0) return;
-    saveToBrowserBackup();
-    const body = JSON.stringify(mem);
+    saveBackup();
+    var body = JSON.stringify(mem);
     try {
       fetch('api/storage', {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body,
+        body: body,
         keepalive: true
-      }).catch(() => {});
+      }).catch(function() {});
     } catch (_) {}
   }
 
   window.addEventListener('pagehide', flushSync);
 
   window.pmLocalStorage = {
-    getItem(key) {
+    getItem: function(key) {
       return Object.prototype.hasOwnProperty.call(mem, key) ? mem[key] : null;
     },
-    setItem(key, value) {
+    setItem: function(key, value) {
       mem[key] = String(value);
-      saveToBrowserBackup();
+      saveBackup();
       schedulePersist();
     }
   };
 
-  function fetchWithTimeout(url, opts, ms=4000){
-    const ctrl = new AbortController();
-    const t = setTimeout(()=> ctrl.abort(), ms);
-    const o = Object.assign({}, opts, { signal: ctrl.signal });
-    return fetch(url, o).finally(()=> clearTimeout(t));
-  }
-
+  // === INIT : le navigateur EST la source de vérité ===
   window.__pmStorageReady = (async function initPmStorage() {
-    console.info('[PM DEBUG] Vérification session /api/auth/me');
-    let meRes;
-    try{
-      meRes = await fetchWithTimeout('api/auth/me', { credentials: 'same-origin' }, 3000);
-    }catch(e){
-      console.warn('[PM DEBUG] api/auth/me timeout/erreur', e && e.message);
-      sessionStorage.removeItem('currentUser');
-      loadBackupIntoMem();
-      return;
-    }
-    if (!meRes || !meRes.ok) {
-      console.warn('[PM DEBUG] Session invalide', { status: meRes && meRes.status });
-      sessionStorage.removeItem('currentUser');
-      loadBackupIntoMem();
-      return;
-    }
-    let user;
-    try{ user = await meRes.json(); }catch(e){ return; }
-    try{ sessionStorage.setItem('currentUser', JSON.stringify(user)); }catch(e){}
+    console.info('[PM DEBUG] Init storage — navigateur = source de vérité');
 
-    let stRes;
-    try{
-      stRes = await fetchWithTimeout('api/storage', { credentials: 'same-origin' }, 3000);
-    }catch(e){
-      console.warn('[PM DEBUG] api/storage timeout');
-      loadBackupIntoMem();
-      return;
-    }
-    if (!stRes || !stRes.ok) {
-      console.error('[PM DEBUG] api/storage failed', stRes && stRes.status);
-      loadBackupIntoMem();
-      return;
-    }
-    let data;
-    try{ data = await stRes.json(); }catch(e){ loadBackupIntoMem(); return; }
-
-    const serverAccounts = parseAccounts(data['PM_INTRANET_OFFICIAL_ACCOUNTS']);
-    const backup = loadFromBrowserBackup();
-    const backupAccounts = backup ? parseAccounts(backup['PM_INTRANET_OFFICIAL_ACCOUNTS']) : [];
-
-    if (serverAccounts.length >= backupAccounts.length) {
-      Object.keys(mem).forEach((k) => delete mem[k]);
-      Object.assign(mem, data);
-      saveToBrowserBackup();
-    } else {
-      console.info('[PM DEBUG] Backup local plus récent (' + backupAccounts.length + ' vs ' + serverAccounts.length + ' comptes) — restauration locale');
-      Object.keys(mem).forEach((k) => delete mem[k]);
+    // 1. Toujours charger depuis le backup local d'abord
+    var backup = loadBackup();
+    if (backup && Object.keys(backup).length > 0) {
+      console.info('[PM DEBUG] Backup local trouvé (' + Object.keys(backup).length + ' keys) — restauration');
+      Object.keys(mem).forEach(function(k) { delete mem[k]; });
       Object.assign(mem, backup);
-      saveToBrowserBackup();
-      persist();
     }
+
+    // 2. Vérifier la session (auth/me) — ne pas bloquer
+    try {
+      var ctrl = new AbortController();
+      var timer = setTimeout(function() { ctrl.abort(); }, 3000);
+      var meRes = await fetch('api/auth/me', { credentials: 'same-origin', signal: ctrl.signal });
+      clearTimeout(timer);
+      if (meRes && meRes.ok) {
+        var user = await meRes.json();
+        try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch(e) {}
+      } else {
+        sessionStorage.removeItem('currentUser');
+      }
+    } catch(e) {
+      console.warn('[PM DEBUG] api/auth/me timeout/erreur');
+      sessionStorage.removeItem('currentUser');
+    }
+
+    // 3. Essayer de sync le serveur en arrière-plan (best-effort)
+    try {
+      var stRes = await fetch('api/storage', { credentials: 'same-origin' });
+      if (stRes && stRes.ok) {
+        var serverData = await stRes.json();
+        var serverAccounts = parseAccounts(serverData['PM_INTRANET_OFFICIAL_ACCOUNTS']);
+        var localAccounts = parseAccounts(mem['PM_INTRANET_OFFICIAL_ACCOUNTS']);
+
+        if (serverAccounts.length > localAccounts.length) {
+          console.info('[PM DEBUG] Serveur a plus de comptes (' + serverAccounts.length + '>' + localAccounts.length + ') — fusion');
+          Object.keys(serverData).forEach(function(k) {
+            if (!mem[k]) mem[k] = serverData[k];
+          });
+          saveBackup();
+        }
+      }
+    } catch(e) {
+      console.warn('[PM DEBUG] Sync serveur échoué (pas grave)', e && e.message);
+    }
+
+    // 4. S'assurer que les comptes initiaux existent
+    ensureInitialAccounts();
   })();
+
+  function ensureInitialAccounts() {
+    var raw = mem['PM_INTRANET_OFFICIAL_ACCOUNTS'];
+    var accounts;
+    try {
+      accounts = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+    } catch(e) {
+      accounts = [];
+    }
+    if (!Array.isArray(accounts)) accounts = [];
+    if (accounts.length === 0) {
+      accounts = [
+        {rio:'123',password:'123',nom:'TEST',prenom:'Agent',grade:'GRP',role:'Effectif',specialites:['BMU'],webhookUrl:''},
+        {rio:'6452182',password:'Lenny2010+',nom:'BLAS',prenom:'Lenny',grade:'DPM',role:'Direction',specialites:[],webhookUrl:''},
+        {rio:'4528259',password:'350075Mn@.',nom:'DUPONT',prenom:'Quentin',grade:'CDP',role:'Direction',specialites:['BMU'],webhookUrl:''}
+      ];
+      mem['PM_INTRANET_OFFICIAL_ACCOUNTS'] = JSON.stringify(accounts, null, 2);
+      saveBackup();
+      persist();
+      console.info('[PM DEBUG] Comptes initiaux créés');
+    }
+  }
 
   function parseAccounts(json) {
     try {
-      const arr = typeof json === 'string' ? JSON.parse(json) : json;
+      var arr = typeof json === 'string' ? JSON.parse(json) : json;
       return Array.isArray(arr) ? arr : [];
     } catch (_) { return []; }
-  }
-
-  function loadBackupIntoMem() {
-    const backup = loadFromBrowserBackup();
-    if (backup && Object.keys(backup).length > 0) {
-      console.info('[PM DEBUG] Restauration depuis backup localStorage');
-      Object.keys(mem).forEach((k) => delete mem[k]);
-      Object.assign(mem, backup);
-    }
   }
 })();
