@@ -2,10 +2,25 @@
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $root = __DIR__ . '/..';
 
-// Turso test endpoint (before session, bypasses api.php)
+// Turso test — direct in api/index.php, no session needed
 if ($uri === '/turso-test.php' || $uri === '/turso-test') {
-    require $root . '/turso-test.php';
-    return;
+    header('Content-Type: application/json');
+    error_reporting(E_ALL);
+    ini_set('display_errors', '0');
+    $results = ['step' => 'start'];
+    try {
+        require_once $root . '/includes/pm_turso.php';
+        $results['step'] = 'turso_loaded';
+    } catch (Throwable $e) {
+        $results['error'] = 'load: ' . $e->getMessage();
+        echo json_encode($results);
+        exit;
+    }
+    try { pm_turso_init_tables(); $results['init'] = 'OK'; } catch (Throwable $e) { $results['init'] = 'FAIL: ' . $e->getMessage(); }
+    try { $k = '_test_' . time(); pm_turso_kv_set($k, gmdate('c')); $results['write'] = 'OK key=' . $k; } catch (Throwable $e) { $results['write'] = 'FAIL: ' . $e->getMessage(); }
+    try { $all = pm_turso_kv_get_all(); $results['count'] = count($all); $results['keys'] = array_slice(array_keys($all), 0, 10); } catch (Throwable $e) { $results['count'] = 'FAIL: ' . $e->getMessage(); }
+    echo json_encode($results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
 }
 
 // API endpoints → api.php
