@@ -1312,14 +1312,8 @@ if ($method === 'GET' && $sub === '/examens/results') {
     pm_json_response(['results' => $results]);
 }
 
-// GET /api/debug/turso — test Turso connection (direction only)
+// GET /api/debug/turso — public test endpoint for Turso connectivity
 if ($method === 'GET' && $sub === '/debug/turso') {
-    pm_require_session();
-    $store = pm_read_store();
-    $actor = pm_auth_user_from_session($store);
-    if (!pm_is_triade_lead($actor)) {
-        pm_json_response(['error' => 'Accès refusé.'], 403);
-    }
     $results = [];
     try {
         pm_turso_init_tables();
@@ -1328,23 +1322,17 @@ if ($method === 'GET' && $sub === '/debug/turso') {
         $results['init'] = 'FAIL: ' . $e->getMessage();
     }
     try {
-        pm_turso_kv_set('_test_debug', gmdate('c'));
+        pm_turso_kv_set('_test_' . time(), gmdate('c'));
         $results['write'] = 'OK';
     } catch (\Throwable $e) {
         $results['write'] = 'FAIL: ' . $e->getMessage();
     }
     try {
-        $val = pm_turso_kv_get('_test_debug');
-        $results['read'] = $val !== null ? 'OK: ' . $val : 'NULL';
-    } catch (\Throwable $e) {
-        $results['read'] = 'FAIL: ' . $e->getMessage();
-    }
-    try {
         $all = pm_turso_kv_get_all();
-        $results['read_all'] = 'OK: ' . count($all) . ' keys';
-        $results['keys'] = array_keys($all);
+        $results['count'] = count($all);
+        $results['keys'] = array_slice(array_keys($all), 0, 10);
     } catch (\Throwable $e) {
-        $results['read_all'] = 'FAIL: ' . $e->getMessage();
+        $results['count'] = 'FAIL: ' . $e->getMessage();
     }
     pm_json_response($results);
 }
