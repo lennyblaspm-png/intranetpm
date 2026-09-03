@@ -6,12 +6,18 @@ require_once __DIR__ . '/includes/pm_store.php';
 
 // Quick Supabase test — before session_start to avoid crash blocking
 $uri_quick = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-if ($uri_quick === '/api/debug/supabase') {
+if ($uri_quick === '/api/debug/supabase' || $uri_quick === '/api/debug/supabase/') {
     header('Content-Type: application/json');
-    $r = [];
+    $r = ['uri' => $uri_quick];
     try { pm_supabase_kv_set('_test_' . time(), gmdate('c')); $r['write'] = 'OK'; } catch (\Throwable $e) { $r['write'] = 'FAIL: ' . $e->getMessage(); }
     try { $all = pm_supabase_kv_get_all(); $r['count'] = count($all); $r['keys'] = array_slice(array_keys($all), 0, 10); } catch (\Throwable $e) { $r['count'] = 'FAIL: ' . $e->getMessage(); }
     echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+// Debug: show URI for troubleshooting
+if (str_contains($uri_quick, '/debug')) {
+    header('Content-Type: application/json');
+    echo json_encode(['uri_quick' => $uri_quick, 'request_uri' => $_SERVER['REQUEST_URI'] ?? '?', 'server' => array_keys($_SERVER)], JSON_PRETTY_PRINT);
     exit;
 }
 
