@@ -10,7 +10,6 @@
           "candidature.php",
           "espace-candidat.php",
           "api.php",
-          "turso-test.php",
           "assets/**",
           "includes/**",
           "data/**"
