@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // Turso HTTP API — la DB URL doit être en https:// pour le pipeline
-define('PM_TURSO_URL', 'https://intranetpm-lenky.turso.io');
+define('PM_TURSO_URL', 'https://intranetpm-lenky.aws-ap-northeast-1.turso.io');
 define('PM_TURSO_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJFcGY5aDZiMkVmR0FaR0lHaTI2T29RIiwib3JnX2lkIjoxMDAwMjM1MDI1fQ.GCRDXNe9xIRTPZl-6Jyhik0Ieaq5TUZWbnrd4QHiG7JRqw9fEdafl3-ZglEoUNJ92hZKslZbD8B0f_TSMQfdDA');
 
 /**
