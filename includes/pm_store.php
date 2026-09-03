@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/pm_turso.php';
+require_once __DIR__ . '/pm_supabase.php';
 
 const PM_ROLES_DIRECTION = 'Direction';
 const PM_ROLES_EFFECTIF = 'Effectif';
@@ -126,17 +126,16 @@ function pm_read_store(): array
 {
     if (pm_is_vercel()) {
         try {
-            pm_turso_init_tables();
-            $all = pm_turso_kv_get_all();
+            $all = pm_supabase_kv_get_all();
             if ($all !== []) {
                 return $all;
             }
-            // First time: seed Turso from default accounts
+            // First time: seed Supabase from default accounts
             $d = pm_default_store();
-            pm_turso_kv_set_all($d);
+            pm_supabase_kv_set_all($d);
             return $d;
         } catch (\Throwable $e) {
-            error_log('[PM TURSO] read_store failed: ' . $e->getMessage());
+            error_log('[PM SUPABASE] read_store failed: ' . $e->getMessage());
         }
     }
     // Local file fallback
@@ -165,11 +164,10 @@ function pm_write_store(array $store): void
 {
     if (pm_is_vercel()) {
         try {
-            pm_turso_init_tables();
-            pm_turso_kv_set_all($store);
+            pm_supabase_kv_set_all($store);
             return;
         } catch (\Throwable $e) {
-            error_log('[PM TURSO] write_store failed: ' . $e->getMessage());
+            error_log('[PM SUPABASE] write_store failed: ' . $e->getMessage());
         }
     }
     // Local file fallback
