@@ -68,6 +68,16 @@
     const stRes = await fetch('api/storage', { credentials: 'same-origin' });
     if (!stRes.ok) return false;
     const data = await stRes.json();
+
+    const serverAccounts = parseAccounts(data['PM_INTRANET_OFFICIAL_ACCOUNTS']);
+    const backup = loadFromBrowserBackup();
+    const backupAccounts = backup ? parseAccounts(backup['PM_INTRANET_OFFICIAL_ACCOUNTS']) : [];
+
+    if (backupAccounts.length > serverAccounts.length) {
+      console.info('[PM DEBUG] pullServer: backup plus récent (' + backupAccounts.length + '>' + serverAccounts.length + ') — on garde le backup');
+      return true;
+    }
+
     Object.keys(mem).forEach((k) => delete mem[k]);
     Object.assign(mem, data);
     saveToBrowserBackup();
