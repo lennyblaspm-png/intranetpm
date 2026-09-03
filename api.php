@@ -4,6 +4,18 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/pm_hosting_config.php';
 require_once __DIR__ . '/includes/pm_store.php';
 
+// Quick Turso test — before session_start to avoid crash blocking
+$uri_quick = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+if ($uri_quick === '/api/debug/turso') {
+    header('Content-Type: application/json');
+    $r = [];
+    try { pm_turso_init_tables(); $r['init'] = 'OK'; } catch (\Throwable $e) { $r['init'] = 'FAIL: ' . $e->getMessage(); }
+    try { pm_turso_kv_set('_test_' . time(), gmdate('c')); $r['write'] = 'OK'; } catch (\Throwable $e) { $r['write'] = 'FAIL: ' . $e->getMessage(); }
+    try { $all = pm_turso_kv_get_all(); $r['count'] = count($all); $r['keys'] = array_slice(array_keys($all), 0, 10); } catch (\Throwable $e) { $r['count'] = 'FAIL: ' . $e->getMessage(); }
+    echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
 function pm_send_discord_webhook(string $url, array $payload): void {
     if ($url === '' || !str_starts_with($url, 'https://')) return;
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
