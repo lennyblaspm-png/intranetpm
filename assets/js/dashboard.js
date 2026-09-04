@@ -66,12 +66,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Tenter de restaurer la session depuis le backup localStorage
         try {
             const backupRaw = localStorage.getItem('PM_INTRANET_BACKUP_STORE');
+            console.info('[PM DEBUG] Backup brut présent:', !!backupRaw);
             if (backupRaw) {
                 const backupData = JSON.parse(backupRaw);
+                const keys = Object.keys(backupData);
+                console.info('[PM DEBUG] Clés backup:', keys);
                 const accountsRaw = backupData.PM_INTRANET_OFFICIAL_ACCOUNTS;
-                const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : (accountsRaw || []);
-                // Restaurer le dernier compte utilisé (stocké au logout ou à la connexion)
+                console.info('[PM DEBUG] accountsRaw type:', typeof accountsRaw, 'longueur:', accountsRaw ? accountsRaw.length : 0);
+                let accounts = [];
+                try {
+                    accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : (Array.isArray(accountsRaw) ? accountsRaw : []);
+                } catch(pe) {
+                    console.warn('[PM DEBUG] Erreur parse accounts:', pe);
+                }
+                console.info('[PM DEBUG] Nombre de comptes:', accounts.length);
+                // Restaurer le dernier compte utilisé
                 const lastRio = localStorage.getItem('PM_LAST_RIO');
+                console.info('[PM DEBUG] lastRio:', lastRio);
                 if (lastRio && Array.isArray(accounts)) {
                     const found = accounts.find(a => a.rio && a.rio.toLowerCase() === lastRio.toLowerCase());
                     if (found) {
@@ -81,9 +92,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         console.info('[PM DEBUG] Session restaurée depuis localStorage:', currentUser.rio, currentUser.prenom);
                     }
                 }
-                // Si pas de dernier RIO, prendre le premier compte
+                // Si pas de dernier RIO, prendre le premier compte Direction ou le premier
                 if (!currentUser && Array.isArray(accounts) && accounts.length > 0) {
-                    currentUser = Object.assign({}, accounts[0]);
+                    const dirAccount = accounts.find(a => a.role === 'Direction');
+                    const target = dirAccount || accounts[0];
+                    currentUser = Object.assign({}, target);
                     delete currentUser.password;
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
                     console.info('[PM DEBUG] Session auto-restaurée (premier compte):', currentUser.rio, currentUser.prenom);
