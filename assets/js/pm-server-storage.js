@@ -114,7 +114,9 @@
       Object.assign(mem, backup);
     }
 
-    // 2. Vérifier la session (auth/me) — ne pas bloquer, ne pas effacer le login localStorage
+    // 2. Vérifier la session serveur (auth/me) — ne pas bloquer, ne pas écraser le login local
+    var existingUser = null;
+    try { existingUser = JSON.parse(sessionStorage.getItem('currentUser')); } catch(e) {}
     try {
       var ctrl = new AbortController();
       var timer = setTimeout(function() { ctrl.abort(); }, 3000);
@@ -122,9 +124,12 @@
       clearTimeout(timer);
       if (meRes && meRes.ok) {
         var user = await meRes.json();
-        try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch(e) {}
+        // Ne met à jour que si l'utilisateur serveur correspond au RIO déjà connecté
+        if (user && user.rio && existingUser && user.rio === existingUser.rio) {
+          try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch(e) {}
+        }
+        // Si serveur retourne un AUTRE utilisateur, on ignore — le login local prime
       }
-      // Si le serveur ne répond pas, on GARDE le sessionStorage existant (login local)
     } catch(e) {
       console.warn('[PM DEBUG] api/auth/me timeout — on garde la session locale');
     }
