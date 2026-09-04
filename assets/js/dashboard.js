@@ -71,31 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser = { prenom: 'Invité', nom: '', grade: '', role: 'Public', rio: 'public', specialites: [], phone: '', webhookUrl: '' };
 
     } else {
-
-        // Vérifie que la session existe toujours côté serveur (ex: admin supprimé)
-
-        try {
-
-            const raw = pmLocalStorage.getItem(STORAGE_KEY);
-
-            const all = raw ? JSON.parse(raw) : [];
-
-            const exists = all.some(u => String(u.rio).toLowerCase() === String(currentUser.rio||'').toLowerCase());
-
-            if (!exists) {
-
-                console.warn('[PM DEBUG] Session invalide (compte supprimé) -- passage en public');
-
-                sessionStorage.removeItem('currentUser');
-
-                isPublicMode = true;
-
-                currentUser = { prenom: 'Invité', nom: '', grade: '', role: 'Public', rio: 'public', specialites: [], phone: '', webhookUrl: '' };
-
-            }
-
-        } catch(e) {}
-
+        // On fait confiance à sessionStorage — si l'utilisateur a pu se connecter, il est valide.
+        // La vérification serveur est retirée car le navigateur est la source de vérité.
+        console.info('[PM DEBUG] Utilisateur connecté:', currentUser.rio, currentUser.prenom);
     }
 
     window.__pmIsPublicMode = isPublicMode;

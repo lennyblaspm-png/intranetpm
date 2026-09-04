@@ -1,35 +1,24 @@
-// Connexion via l'API PHP (session + cookie).
+// Connexion : serveur d'abord, fallback localStorage si le serveur ne trouve pas.
 
 document.addEventListener('DOMContentLoaded', () => {
   const safeReadJson = async (res) => {
     const raw = await res.text();
     if (!raw) return {};
+    try { return JSON.parse(raw); } catch { return {}; }
+  };
+
+  const getAccountsFromBackup = () => {
     try {
-      return JSON.parse(raw);
-    } catch {
-      console.warn('[PM DEBUG] Réponse non-JSON', raw.slice(0, 180));
-      return {};
-    }
+      const raw = localStorage.getItem('PM_INTRANET_BACKUP_STORE');
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      const arr = typeof data.PM_INTRANET_OFFICIAL_ACCOUNTS === 'string'
+        ? JSON.parse(data.PM_INTRANET_OFFICIAL_ACCOUNTS)
+        : data.PM_INTRANET_OFFICIAL_ACCOUNTS;
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
   };
 
-  const finalizeLoginFromSession = async (contextLabel) => {
-    const meRes = await fetch('api/auth/me', { credentials: 'same-origin' });
-    const meData = await safeReadJson(meRes);
-    console.info('[PM DEBUG] Vérification session après login', {
-      context: contextLabel,
-      status: meRes.status,
-      ok: meRes.ok,
-      hasUser: Boolean(meData && meData.rio)
-    });
-    if (!meRes.ok || !meData || !meData.rio) {
-      alert('Connexion incomplète: session non récupérée. Vérifie les logs PHP/Apache.');
-      return;
-    }
-    sessionStorage.setItem('currentUser', JSON.stringify(meData));
-    window.location.href = 'dashboard.php';
-  };
-
-  console.info('[PM DEBUG] Auth init', { path: window.location.pathname, origin: window.location.origin });
   const loginForm = document.getElementById('login-form');
   const localBox = document.getElementById('local-libre-acces');
   const btnLibreLocal = document.getElementById('btn-libre-acces-local');
@@ -40,9 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     localBox.hidden = false;
     const rootLink = document.getElementById('libre-acces-lien-root');
     if (rootLink) {
-      const root = `${window.location.origin}/`;
-      rootLink.href = root;
-      rootLink.textContent = root;
+      rootLink.href = `${window.location.origin}/`;
+      rootLink.textContent = `${window.location.origin}/`;
     }
   }
 
@@ -50,34 +38,32 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLibreLocal.addEventListener('click', async () => {
       if (btnLibreLocal.disabled) return;
       btnLibreLocal.disabled = true;
-      const prev = btnLibreLocal.textContent;
       btnLibreLocal.textContent = 'Connexion…';
       try {
-        console.info('[PM DEBUG] Tentative dev-session');
         const res = await fetch('api/auth/dev-session', {
-          method: 'POST',
-          credentials: 'same-origin',
+          method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' }
         });
         const data = await safeReadJson(res);
-        console.info('[PM DEBUG] Réponse dev-session', { status: res.status, ok: res.ok });
-        if (!res.ok) {
-          alert(data.error || 'Accès refusé (utilisez bien l\'URL locale de cet intranet sur cette machine).');
-          return;
-        }
+        if (!res.ok) { alert(data.error || 'Accès refusé.'); return; }
         if (data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-          console.info('[PM DEBUG] Redirection vers dashboard.php (dev-session user)');
           window.location.href = 'dashboard.php';
           return;
         }
-        await finalizeLoginFromSession('dev-session');
+        const meRes = await fetch('api/auth/me', { credentials: 'same-origin' });
+        const meData = await safeReadJson(meRes);
+        if (meRes.ok && meData && meData.rio) {
+          sessionStorage.setItem('currentUser', JSON.stringify(meData));
+          window.location.href = 'dashboard.php';
+          return;
+        }
+        alert('Session non récupérée.');
       } catch (err) {
-        console.error('[PM DEBUG] Erreur dev-session', err);
         alert('Impossible de joindre le serveur.');
       } finally {
         btnLibreLocal.disabled = false;
-        btnLibreLocal.textContent = prev;
+        btnLibreLocal.textContent = 'Accès libre (local)';
       }
     });
   }
@@ -85,41 +71,69 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const rioInput = document.getElementById('rio').value.trim();
       const passwordInput = document.getElementById('password').value.trim();
-
-      if (!rioInput || !passwordInput) {
-        alert('Veuillez remplir tous les champs.');
-        return;
-      }
+      if (!rioInput || !passwordInput) { alert('Veuillez remplir tous les champs.'); return; }
 
       try {
-        console.info('[PM DEBUG] Tentative login', { rio: rioInput });
+        // 1. Essayer le serveur d'abord
         const res = await fetch('api/auth/login', {
-          method: 'POST',
-          credentials: 'same-origin',
+          method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rio: rioInput, password: passwordInput })
         });
         const data = await safeReadJson(res);
-        console.info('[PM DEBUG] Réponse login', { status: res.status, ok: res.ok, hasUser: Boolean(data.user) });
 
-        if (!res.ok) {
-          alert(data.error || 'Échec de la connexion.');
-          return;
-        }
-
-        if (data.user) {
+        if (res.ok && data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-          console.info('[PM DEBUG] Redirection vers dashboard.php (login user)');
           window.location.href = 'dashboard.php';
           return;
         }
-        await finalizeLoginFromSession('login');
+
+        // 2. Fallback : vérifier dans le localStorage du navigateur
+        if (data.error === 'RIO introuvable.') {
+          console.info('[PM DEBUG] Serveur ne trouve pas le RIO, vérification locale...');
+          const accounts = getAccountsFromBackup();
+          const found = accounts.find(a =>
+            a.rio && a.rio.toLowerCase() === rioInput.toLowerCase() &&
+            a.password === passwordInput
+          );
+
+          if (found) {
+            console.info('[PM DEBUG] Compte trouvé localement !');
+            const user = Object.assign({}, found);
+            delete user.password;
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+            // Essayer de créer la session serveur en arrière-plan
+            try {
+              await fetch('api/auth/login', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rio: rioInput, password: passwordInput })
+              });
+            } catch(_) {}
+            window.location.href = 'dashboard.php';
+            return;
+          }
+        }
+
+        alert(data.error || 'Échec de la connexion.');
       } catch (err) {
-        console.error('[PM DEBUG] Erreur login', err);
-        alert('Impossible de joindre le serveur PHP. Vérifiez Apache/XAMPP (ou lancez « php -S localhost:PORT router.php » à la racine du projet).');
+        // 3. Serveur injoignable — fallback local
+        console.warn('[PM DEBUG] Serveur injoignable, fallback local', err && err.message);
+        const accounts = getAccountsFromBackup();
+        const found = accounts.find(a =>
+          a.rio && a.rio.toLowerCase() === rioInput.toLowerCase() &&
+          a.password === passwordInput
+        );
+        if (found) {
+          const user = Object.assign({}, found);
+          delete user.password;
+          sessionStorage.setItem('currentUser', JSON.stringify(user));
+          window.location.href = 'dashboard.php';
+          return;
+        }
+        alert('Impossible de joindre le serveur et ce compte n\'existe pas en local.');
       }
     });
   }

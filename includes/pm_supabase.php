@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 define('PM_SUPABASE_URL', 'https://vlhmozvizmfttyitipfg.supabase.co');
-define('PM_SUPABASE_KEY', 'sb_publishable_1JPb1xX34GQZ1lhFuLTO7A_xAm33Jij');
+define('PM_SUPABASE_KEY', getenv('SUPABASE_KEY') ?: '');
 
 /**
  * Requête GET Supabase REST API.

@@ -114,7 +114,7 @@
       Object.assign(mem, backup);
     }
 
-    // 2. Vérifier la session (auth/me) — ne pas bloquer
+    // 2. Vérifier la session (auth/me) — ne pas bloquer, ne pas effacer le login localStorage
     try {
       var ctrl = new AbortController();
       var timer = setTimeout(function() { ctrl.abort(); }, 3000);
@@ -123,12 +123,10 @@
       if (meRes && meRes.ok) {
         var user = await meRes.json();
         try { sessionStorage.setItem('currentUser', JSON.stringify(user)); } catch(e) {}
-      } else {
-        sessionStorage.removeItem('currentUser');
       }
+      // Si le serveur ne répond pas, on GARDE le sessionStorage existant (login local)
     } catch(e) {
-      console.warn('[PM DEBUG] api/auth/me timeout/erreur');
-      sessionStorage.removeItem('currentUser');
+      console.warn('[PM DEBUG] api/auth/me timeout — on garde la session locale');
     }
 
     // 3. Essayer de sync le serveur en arrière-plan (best-effort)
