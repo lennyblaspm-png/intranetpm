@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (res.ok && data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+          localStorage.setItem('PM_LAST_RIO', rioInput);
           window.location.href = 'dashboard.php';
           return;
         }
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = Object.assign({}, found);
             delete user.password;
             sessionStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('PM_LAST_RIO', rioInput);
             // Essayer de créer la session serveur en arrière-plan
             try {
               await fetch('api/auth/login', {
@@ -130,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const user = Object.assign({}, found);
           delete user.password;
           sessionStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('PM_LAST_RIO', rioInput);
           window.location.href = 'dashboard.php';
           return;
         }

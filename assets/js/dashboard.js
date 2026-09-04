@@ -63,16 +63,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isPublicMode = false;
 
     if (!currentUser) {
+        // Tenter de restaurer la session depuis le backup localStorage
+        try {
+            const backupRaw = localStorage.getItem('PM_INTRANET_BACKUP_STORE');
+            if (backupRaw) {
+                const backupData = JSON.parse(backupRaw);
+                const accountsRaw = backupData.PM_INTRANET_OFFICIAL_ACCOUNTS;
+                const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : (accountsRaw || []);
+                // Restaurer le dernier compte utilisé (stocké au logout ou à la connexion)
+                const lastRio = localStorage.getItem('PM_LAST_RIO');
+                if (lastRio && Array.isArray(accounts)) {
+                    const found = accounts.find(a => a.rio && a.rio.toLowerCase() === lastRio.toLowerCase());
+                    if (found) {
+                        currentUser = Object.assign({}, found);
+                        delete currentUser.password;
+                        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        console.info('[PM DEBUG] Session restaurée depuis localStorage:', currentUser.rio, currentUser.prenom);
+                    }
+                }
+                // Si pas de dernier RIO, prendre le premier compte
+                if (!currentUser && Array.isArray(accounts) && accounts.length > 0) {
+                    currentUser = Object.assign({}, accounts[0]);
+                    delete currentUser.password;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    console.info('[PM DEBUG] Session auto-restaurée (premier compte):', currentUser.rio, currentUser.prenom);
+                }
+            }
+        } catch(e) {
+            console.warn('[PM DEBUG] Erreur restauration session', e);
+        }
+    }
 
+    if (!currentUser) {
         console.warn('[PM DEBUG] Aucun utilisateur en sessionStorage -- mode public (accueil seul)');
-
         isPublicMode = true;
-
         currentUser = { prenom: 'Invité', nom: '', grade: '', role: 'Public', rio: 'public', specialites: [], phone: '', webhookUrl: '' };
-
     } else {
-        // On fait confiance à sessionStorage — si l'utilisateur a pu se connecter, il est valide.
-        // La vérification serveur est retirée car le navigateur est la source de vérité.
         console.info('[PM DEBUG] Utilisateur connecté:', currentUser.rio, currentUser.prenom);
     }
 
