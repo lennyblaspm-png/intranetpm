@@ -796,8 +796,6 @@ if ($method === 'POST' && $sub === '/auth/complete-setup') {
 if ($method === 'GET' && $sub === '/storage') {
     pm_require_session();
     $store = pm_read_store();
-    pm_ensure_lenny_in_accounts($store);
-    $store = pm_read_store();
     $out = [];
     foreach ($store as $k => $v) {
         if (is_string($k) && is_string($v)) {
@@ -824,6 +822,15 @@ if ($method === 'PUT' && $sub === '/storage') {
     $current = pm_read_store();
     $merged = $current;
     foreach ($next as $k => $v) {
+        // Proteger les comptes: ne jamais réduire le nombre de comptes
+        if ($k === PM_STORAGE_KEY && isset($current[$k])) {
+            $currentAccounts = json_decode($current[$k], true) ?? [];
+            $nextAccounts = json_decode($v, true) ?? [];
+            if (count($nextAccounts) >= count($currentAccounts)) {
+                $merged[$k] = $v;
+            }
+            continue;
+        }
         $merged[$k] = $v;
     }
     pm_write_store($merged);
