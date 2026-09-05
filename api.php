@@ -598,28 +598,6 @@ if ($method === 'POST' && $sub === '/auth/login') {
         error_log('[PM DEBUG] POST /api/auth/login rejected: missing fields');
         pm_json_response(['error' => 'Champs requis.'], 400);
     }
-    // Si le client envoie des comptes, les sauvegarder dans le store (seed)
-    if (is_array($clientAccounts) && count($clientAccounts) > 0) {
-        try {
-            $store = pm_read_store();
-            $existing = pm_get_accounts_from_store($store);
-            $existingRios = array_map(function($a) { return strtolower($a['rio'] ?? ''); }, $existing);
-            $newAccounts = [];
-            foreach ($clientAccounts as $acc) {
-                if (is_array($acc) && isset($acc['rio']) && !in_array(strtolower($acc['rio']), $existingRios)) {
-                    $newAccounts[] = $acc;
-                }
-            }
-            if ($newAccounts !== []) {
-                $allAccounts = array_merge($existing, $newAccounts);
-                $store[PM_STORAGE_KEY] = json_encode($allAccounts, JSON_UNESCAPED_UNICODE);
-                pm_write_store($store);
-                error_log('[PM DEBUG] Login seed: ' . count($newAccounts) . ' nouveaux comptes ajoutés');
-            }
-        } catch (\Throwable $e) {
-            error_log('[PM DEBUG] Login seed error: ' . $e->getMessage());
-        }
-    }
     $store = pm_read_store();
     pm_ensure_lenny_in_accounts($store);
     $store = pm_read_store();
@@ -641,6 +619,40 @@ if ($method === 'POST' && $sub === '/auth/login') {
     session_write_close();
     error_log('[PM DEBUG] POST /api/auth/login success rio=' . $_SESSION['rio']);
     pm_json_response(['user' => pm_public_user($found['user'])]);
+}
+
+// POST /api/seed-accounts — sauvegarde les comptes du navigateur vers Supabase (après connexion)
+if ($method === 'POST' && $sub === '/seed-accounts') {
+    pm_require_session();
+    $raw = file_get_contents('php://input');
+    $body = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($body) || !isset($body['accounts']) || !is_array($body['accounts'])) {
+        pm_json_response(['error' => 'accounts requis'], 400);
+    }
+    try {
+        $store = pm_read_store();
+        $existing = pm_get_accounts_from_store($store);
+        $existingRios = [];
+        foreach ($existing as $a) {
+            $existingRios[] = strtolower($a['rio'] ?? '');
+        }
+        $added = 0;
+        foreach ($body['accounts'] as $acc) {
+            if (is_array($acc) && isset($acc['rio']) && !in_array(strtolower($acc['rio']), $existingRios)) {
+                $existing[] = $acc;
+                $existingRios[] = strtolower($acc['rio']);
+                $added++;
+            }
+        }
+        if ($added > 0) {
+            $store[PM_STORAGE_KEY] = json_encode($existing, JSON_UNESCAPED_UNICODE);
+            pm_write_store($store);
+        }
+        pm_json_response(['ok' => true, 'added' => $added, 'total' => count($existing)]);
+    } catch (\Throwable $e) {
+        error_log('[PM SEED] error: ' . $e->getMessage());
+        pm_json_response(['error' => 'Seed failed'], 500);
+    }
 }
 
 if ($method === 'POST' && $sub === '/auth/dev-session') {

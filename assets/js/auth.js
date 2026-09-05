@@ -76,24 +76,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!rioInput || !passwordInput) { alert('Veuillez remplir tous les champs.'); return; }
 
       try {
-        // 1. Essayer le serveur d'abord (avec les comptes locaux pour seed)
-        const localAccounts = getAccountsFromBackup();
-        const loginPayload = { rio: rioInput, password: passwordInput };
-        // On envoie juste les RIOs des comptes pour le seed côté serveur
-        if (localAccounts.length > 0) {
-          loginPayload.accounts_summary = localAccounts.map(a => ({rio: a.rio, password: a.password, nom: a.nom, prenom: a.prenom, grade: a.grade, role: a.role, specialites: a.specialites || [], webhookUrl: a.webhookUrl || ''}));
-        }
-
+        // 1. Essayer le serveur d'abord
         const res = await fetch('api/auth/login', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(loginPayload)
+          body: JSON.stringify({ rio: rioInput, password: passwordInput })
         });
         const data = await safeReadJson(res);
 
         if (res.ok && data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify(data.user));
           localStorage.setItem('PM_LAST_RIO', rioInput);
+          // Seed les comptes locaux vers le serveur en arrière-plan
+          try {
+            const localAccs = getAccountsFromBackup();
+            if (localAccs.length > 0) {
+              fetch('api/seed-accounts', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accounts: localAccs })
+              }).then(r => r.json()).then(d => console.info('[PM DEBUG] Seed result:', d)).catch(() => {});
+            }
+          } catch(_) {}
           window.location.href = 'dashboard.php';
           return;
         }
@@ -113,14 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             delete user.password;
             sessionStorage.setItem('currentUser', JSON.stringify(user));
             localStorage.setItem('PM_LAST_RIO', rioInput);
-            // Retry login serveur avec les comptes pour seed
-            try {
-              await fetch('api/auth/login', {
-                method: 'POST', credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rio: rioInput, password: passwordInput, accounts_summary: localAccounts.map(a => ({rio: a.rio, password: a.password, nom: a.nom, prenom: a.prenom, grade: a.grade, role: a.role, specialites: a.specialites || [], webhookUrl: a.webhookUrl || ''})) })
-              });
-            } catch(_) {}
             window.location.href = 'dashboard.php';
             return;
           }
