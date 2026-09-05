@@ -131,12 +131,11 @@ function pm_read_store(): array
             if ($all !== []) {
                 return $all;
             }
-            // First time: seed Supabase from default accounts
-            $d = pm_default_store();
-            pm_supabase_kv_set_all($d);
-            return $d;
+            // Supabase vide : retourner les defaults SANS écrire (écriture = PUT /storage ou seed)
+            return pm_default_store();
         } catch (\Throwable $e) {
             error_log('[PM SUPABASE] read_store failed: ' . $e->getMessage());
+            return pm_default_store();
         }
     }
     // Local file fallback
