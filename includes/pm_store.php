@@ -75,7 +75,7 @@ function pm_project_root(): string
 
 function pm_data_dir(): string
 {
-    if (str_contains($_SERVER['VERCEL_URL'] ?? '', 'vercel.app') || str_contains($_SERVER['VERCEL_ENV'] ?? '', 'production')) {
+    if (pm_is_vercel()) {
         $tmp = '/tmp/pm_data';
         if (!is_dir($tmp)) @mkdir($tmp, 0775, true);
         // Seed from deployment on first request
@@ -115,8 +115,9 @@ function pm_default_store(): array
 
 function pm_is_vercel(): bool
 {
-    return str_contains($_SERVER['VERCEL_URL'] ?? '', 'vercel.app')
-        || str_contains($_SERVER['VERCEL_ENV'] ?? '', 'production');
+    $url  = $_SERVER['VERCEL_URL'] ?? getenv('VERCEL_URL') ?: '';
+    $env  = $_SERVER['VERCEL_ENV'] ?? getenv('VERCEL_ENV') ?: '';
+    return str_contains($url, 'vercel.app') || strtolower($env) === 'production';
 }
 
 /**
