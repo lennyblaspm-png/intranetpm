@@ -599,11 +599,9 @@ if ($method === 'POST' && $sub === '/auth/login') {
         pm_json_response(['error' => 'Champs requis.'], 400);
     }
     $store = pm_read_store();
-    $accounts = pm_get_accounts_from_store($store);
-    error_log('[PM DEBUG] Login store keys=' . count($store) . ' accounts=' . count($accounts) . ' vercel=' . (pm_is_vercel() ? '1' : '0'));
     $found = pm_find_user($store, $rio, $password);
     if (isset($found['error']) && $found['error'] === 'rio') {
-        error_log('[PM DEBUG] POST /api/auth/login rejected: rio not found (' . $rio . ') available=' . count($found['accounts'] ?? []));
+        error_log('[PM DEBUG] Login rio not found (' . $rio . ') accounts=' . count($found['accounts'] ?? []));
         pm_json_response(['error' => 'RIO introuvable.'], 401);
     }
     if (isset($found['error']) && $found['error'] === 'password') {
