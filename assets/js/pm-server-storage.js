@@ -35,6 +35,9 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body
+    }).then(function(r) {
+      console.info('[PM DEBUG] Persist response:', r.status, r.ok ? 'OK' : 'FAIL');
+      return r;
     }).catch(function(e) {
       console.warn('[PM DEBUG] Persist serveur échoué (pas grave, backup local OK)', e && e.message);
     });
