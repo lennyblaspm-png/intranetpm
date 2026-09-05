@@ -592,21 +592,20 @@ if ($method === 'POST' && $sub === '/auth/login') {
     }
     $rio = isset($body['rio']) ? (string) $body['rio'] : '';
     $password = isset($body['password']) ? (string) $body['password'] : '';
-    $clientAccounts = isset($body['accounts']) ? $body['accounts'] : null;
+    $clientAccounts = isset($body['accounts_summary']) ? $body['accounts_summary'] : null;
     error_log('[PM DEBUG] POST /api/auth/login attempt rio=' . $rio);
     if ($rio === '' || $password === '') {
         error_log('[PM DEBUG] POST /api/auth/login rejected: missing fields');
         pm_json_response(['error' => 'Champs requis.'], 400);
     }
     // Si le client envoie des comptes, les sauvegarder dans le store (seed)
-    if (is_string($clientAccounts) && strlen($clientAccounts) > 10) {
-        $store = pm_read_store();
-        $decoded = json_decode($clientAccounts, true);
-        if (is_array($decoded) && count($decoded) > 0) {
+    if (is_array($clientAccounts) && count($clientAccounts) > 0) {
+        try {
+            $store = pm_read_store();
             $existing = pm_get_accounts_from_store($store);
             $existingRios = array_map(function($a) { return strtolower($a['rio'] ?? ''); }, $existing);
             $newAccounts = [];
-            foreach ($decoded as $acc) {
+            foreach ($clientAccounts as $acc) {
                 if (is_array($acc) && isset($acc['rio']) && !in_array(strtolower($acc['rio']), $existingRios)) {
                     $newAccounts[] = $acc;
                 }
@@ -617,6 +616,8 @@ if ($method === 'POST' && $sub === '/auth/login') {
                 pm_write_store($store);
                 error_log('[PM DEBUG] Login seed: ' . count($newAccounts) . ' nouveaux comptes ajoutés');
             }
+        } catch (\Throwable $e) {
+            error_log('[PM DEBUG] Login seed error: ' . $e->getMessage());
         }
     }
     $store = pm_read_store();

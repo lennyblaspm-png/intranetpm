@@ -76,18 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!rioInput || !passwordInput) { alert('Veuillez remplir tous les champs.'); return; }
 
       try {
-        // Envoyer les comptes locaux au serveur pour les sauvegarder (seed)
+        // 1. Essayer le serveur d'abord (avec les comptes locaux pour seed)
         const localAccounts = getAccountsFromBackup();
-        const accountsJson = localAccounts.length > 0 ? JSON.stringify(localAccounts) : undefined;
-
-        // 1. Essayer le serveur d'abord
-        const loginBody = { rio: rioInput, password: passwordInput };
-        if (accountsJson) loginBody.accounts = accountsJson;
+        const loginPayload = { rio: rioInput, password: passwordInput };
+        // On envoie juste les RIOs des comptes pour le seed côté serveur
+        if (localAccounts.length > 0) {
+          loginPayload.accounts_summary = localAccounts.map(a => ({rio: a.rio, password: a.password, nom: a.nom, prenom: a.prenom, grade: a.grade, role: a.role, specialites: a.specialites || [], webhookUrl: a.webhookUrl || ''}));
+        }
 
         const res = await fetch('api/auth/login', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(loginBody)
+          body: JSON.stringify(loginPayload)
         });
         const data = await safeReadJson(res);
 
@@ -113,12 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
             delete user.password;
             sessionStorage.setItem('currentUser', JSON.stringify(user));
             localStorage.setItem('PM_LAST_RIO', rioInput);
-            // Envoyer les comptes au serveur pour seed + retry login
+            // Retry login serveur avec les comptes pour seed
             try {
               await fetch('api/auth/login', {
                 method: 'POST', credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rio: rioInput, password: passwordInput, accounts: accountsJson })
+                body: JSON.stringify({ rio: rioInput, password: passwordInput, accounts_summary: localAccounts.map(a => ({rio: a.rio, password: a.password, nom: a.nom, prenom: a.prenom, grade: a.grade, role: a.role, specialites: a.specialites || [], webhookUrl: a.webhookUrl || ''})) })
               });
             } catch(_) {}
             window.location.href = 'dashboard.php';
