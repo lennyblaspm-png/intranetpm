@@ -87,15 +87,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok && data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify(data.user));
           localStorage.setItem('PM_LAST_RIO', rioInput);
-          // Seed les comptes locaux vers le serveur en arrière-plan
+          // Seed les comptes locaux vers le serveur AVANT de rediriger
           try {
             const localAccs = getAccountsFromBackup();
             if (localAccs.length > 0) {
-              fetch('api/seed-accounts', {
+              const seedController = new AbortController();
+              const seedTimeout = setTimeout(() => seedController.abort(), 5000);
+              await fetch('api/seed-accounts', {
                 method: 'POST', credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accounts: localAccs })
-              }).then(r => r.json()).then(d => console.info('[PM DEBUG] Seed result:', d)).catch(() => {});
+                body: JSON.stringify({ accounts: localAccs }),
+                signal: seedController.signal
+              }).then(r => r.json()).then(d => console.info('[PM DEBUG] Seed result:', d)).catch(e => console.warn('[PM DEBUG] Seed failed:', e && e.message));
+              clearTimeout(seedTimeout);
             }
           } catch(_) {}
           window.location.href = 'dashboard.php';
