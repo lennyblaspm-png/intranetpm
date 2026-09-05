@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 define('PM_SUPABASE_URL', 'https://vlhmozvizmfttyitipfg.supabase.co');
-define('PM_SUPABASE_KEY', getenv('SUPABASE_KEY') ?: '');
+define('PM_SUPABASE_KEY', getenv('SUPABASE_KEY') ?: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsaG1venZpem1mdHR5aXRpcGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NDMyNTMsImV4cCI6MjEwNDAxOTI1M30.9bwZWwNp9EKcdpTnTYLBUFrd662_92aHhb0ZgyuqJrU');
 
 /**
  * Requête GET Supabase REST API.
