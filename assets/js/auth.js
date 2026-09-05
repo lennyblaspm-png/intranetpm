@@ -76,11 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!rioInput || !passwordInput) { alert('Veuillez remplir tous les champs.'); return; }
 
       try {
+        // Envoyer les comptes locaux au serveur pour les sauvegarder (seed)
+        const localAccounts = getAccountsFromBackup();
+        const accountsJson = localAccounts.length > 0 ? JSON.stringify(localAccounts) : undefined;
+
         // 1. Essayer le serveur d'abord
+        const loginBody = { rio: rioInput, password: passwordInput };
+        if (accountsJson) loginBody.accounts = accountsJson;
+
         const res = await fetch('api/auth/login', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rio: rioInput, password: passwordInput })
+          body: JSON.stringify(loginBody)
         });
         const data = await safeReadJson(res);
 
@@ -106,12 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
             delete user.password;
             sessionStorage.setItem('currentUser', JSON.stringify(user));
             localStorage.setItem('PM_LAST_RIO', rioInput);
-            // Essayer de créer la session serveur en arrière-plan
+            // Envoyer les comptes au serveur pour seed + retry login
             try {
               await fetch('api/auth/login', {
                 method: 'POST', credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rio: rioInput, password: passwordInput })
+                body: JSON.stringify({ rio: rioInput, password: passwordInput, accounts: accountsJson })
               });
             } catch(_) {}
             window.location.href = 'dashboard.php';
