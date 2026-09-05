@@ -601,10 +601,13 @@ if ($method === 'POST' && $sub === '/auth/login') {
     $store = pm_read_store();
     pm_ensure_lenny_in_accounts($store);
     $store = pm_read_store();
+    $accounts = pm_get_accounts_from_store($store);
+    $rios = array_map(function ($a) { return $a['rio'] ?? ''; }, $accounts);
+    error_log('[PM DEBUG] Login store keys=' . count($store) . ' accounts=' . count($accounts) . ' vercel=' . (pm_is_vercel() ? '1' : '0') . ' rios=' . implode(',', $rios));
     $found = pm_find_user($store, $rio, $password);
     if (isset($found['error']) && $found['error'] === 'rio') {
-        error_log('[PM DEBUG] POST /api/auth/login rejected: rio not found (' . $rio . ')');
-        pm_json_response(['error' => 'RIO introuvable.'], 401);
+        error_log('[PM DEBUG] POST /api/auth/login rejected: rio not found (' . $rio . ') available=' . count($found['accounts'] ?? []));
+        pm_json_response(['error' => 'RIO introuvable.', 'debug_accounts' => count($found['accounts'] ?? []), 'debug_vercel' => pm_is_vercel()], 401);
     }
     if (isset($found['error']) && $found['error'] === 'password') {
         error_log('[PM DEBUG] POST /api/auth/login rejected: wrong password (' . $rio . ')');
