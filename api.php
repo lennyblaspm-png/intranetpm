@@ -14,33 +14,6 @@ if ($uri_quick === '/api/debug/supabase' || $uri_quick === '/api/debug/supabase/
     echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
-// Debug full write test — tests pm_write_store round-trip
-if ($uri_quick === '/api/debug/write-test' || $uri_quick === '/api/debug/write-test/') {
-    header('Content-Type: application/json');
-    $r = ['vercel' => pm_is_vercel(), 'uri' => $uri_quick];
-    try {
-        $testData = ['_debug_write_test' => json_encode(['ts' => time(), 'ok' => true])];
-        $before = pm_supabase_kv_get_all();
-        $r['before_count'] = count($before);
-        pm_supabase_kv_set_all($testData);
-        $after = pm_supabase_kv_get_all();
-        $r['after_count'] = count($after);
-        $r['write_test'] = isset($after['_debug_write_test']) ? 'OK' : 'MISSING';
-        // Now test full pm_write_store
-        $store = $testData;
-        $store[PM_STORAGE_KEY] = json_encode(pm_initial_accounts(), JSON_UNESCAPED_UNICODE);
-        pm_write_store($store);
-        $final = pm_supabase_kv_get_all();
-        $r['final_count'] = count($final);
-        $r['has_accounts'] = isset($final[PM_STORAGE_KEY]) ? 'YES' : 'NO';
-        $r['final_keys'] = array_keys($final);
-    } catch (\Throwable $e) {
-        $r['error'] = $e->getMessage();
-        $r['trace'] = $e->getTraceAsString();
-    }
-    echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    exit;
-}
 // Debug: show URI for troubleshooting
 if (str_contains($uri_quick, '/debug')) {
     header('Content-Type: application/json');
