@@ -822,13 +822,27 @@ if ($method === 'PUT' && $sub === '/storage') {
     $current = pm_read_store();
     $merged = $current;
     foreach ($next as $k => $v) {
-        // Proteger les comptes: ne jamais réduire le nombre de comptes
+        // Proteger les comptes: fusionner par RIO pour ne jamais perdre un compte
         if ($k === PM_STORAGE_KEY && isset($current[$k])) {
             $currentAccounts = json_decode($current[$k], true) ?? [];
             $nextAccounts = json_decode($v, true) ?? [];
-            if (count($nextAccounts) >= count($currentAccounts)) {
-                $merged[$k] = $v;
+            $currentByRio = [];
+            foreach ($currentAccounts as $a) {
+                $rio = strtolower((string)($a['rio'] ?? ''));
+                if ($rio !== '') $currentByRio[$rio] = $a;
             }
+            $nextByRio = [];
+            foreach ($nextAccounts as $a) {
+                $rio = strtolower((string)($a['rio'] ?? ''));
+                if ($rio !== '') $nextByRio[$rio] = $a;
+            }
+            $mergedAccounts = array_values($nextByRio);
+            foreach ($currentByRio as $rio => $a) {
+                if (!isset($nextByRio[$rio])) {
+                    $mergedAccounts[] = $a;
+                }
+            }
+            $merged[$k] = json_encode($mergedAccounts, JSON_UNESCAPED_UNICODE);
             continue;
         }
         $merged[$k] = $v;
