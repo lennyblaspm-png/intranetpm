@@ -5,10 +5,10 @@ declare(strict_types=1);
  * Configuration MySQL — InfinityFree
  * Remplis ces valeurs après création de la base de données sur InfinityFree.
  */
-define('PM_MYSQL_HOST', getenv('MYSQL_HOST') ?: 'sql209.infinityfree.com');
-define('PM_MYSQL_DB',   getenv('MYSQL_DB')   ?: '');
-define('PM_MYSQL_USER', getenv('MYSQL_USER') ?: '');
-define('PM_MYSQL_PASS', getenv('MYSQL_PASS') ?: '');
+define('PM_MYSQL_HOST', getenv('MYSQL_HOST') ?: 'sql301.infinityfree.com');
+define('PM_MYSQL_DB',   getenv('MYSQL_DB')   ?: 'if0_42885489_intranet');
+define('PM_MYSQL_USER', getenv('MYSQL_USER') ?: 'if0_42885489');
+define('PM_MYSQL_PASS', getenv('MYSQL_PASS') ?: '7wGGAlmWqFNQ');
 define('PM_MYSQL_CHARSET', 'utf8mb4');
 
 function pm_mysql_connect_global(): \PDO
