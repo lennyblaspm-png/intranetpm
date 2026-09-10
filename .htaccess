@@ -5,7 +5,7 @@ DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /PM/
+  RewriteBase /
 
   # Bloque l'accès direct à /data/ (modifiable par PHP uniquement)
   RewriteRule ^data(?:/|$) - [F,L]
