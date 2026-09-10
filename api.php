@@ -805,6 +805,21 @@ if ($method === 'GET' && $sub === '/storage') {
     pm_json_response($out);
 }
 
+if ($method === 'GET' && $sub === '/storage/export') {
+    pm_require_session();
+    $store = pm_read_store();
+    $accounts = [];
+    $raw = $store[PM_STORAGE_KEY] ?? '[]';
+    $parsed = json_decode($raw, true);
+    if (is_array($parsed)) {
+        $accounts = $parsed;
+    }
+    header('Content-Type: application/json');
+    header('Content-Disposition: attachment; filename="compm93rp_accounts.json"');
+    echo json_encode($accounts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($method === 'PUT' && $sub === '/storage') {
     pm_require_session();
     $raw = file_get_contents('php://input');
@@ -818,11 +833,9 @@ if ($method === 'PUT' && $sub === '/storage') {
             $next[$k] = $v;
         }
     }
-    // Merge avec le store serveur pour ne jamais perdre une clé (tous s'enregistre)
     $current = pm_read_store();
     $merged = $current;
     foreach ($next as $k => $v) {
-        // Proteger les comptes: fusionner par RIO pour ne jamais perdre un compte
         if ($k === PM_STORAGE_KEY && isset($current[$k])) {
             $currentAccounts = json_decode($current[$k], true) ?? [];
             $nextAccounts = json_decode($v, true) ?? [];
@@ -849,6 +862,31 @@ if ($method === 'PUT' && $sub === '/storage') {
     }
     pm_write_store($merged);
     pm_json_response(['ok' => true]);
+}
+
+if ($method === 'POST' && $sub === '/storage/import') {
+    pm_require_session();
+    $raw = file_get_contents('php://input');
+    $accounts = json_decode($raw, true);
+    if (!is_array($accounts)) {
+        pm_json_response(['error' => 'JSON invalide'], 400);
+    }
+    $store = pm_read_store();
+    $existingRaw = $store[PM_STORAGE_KEY] ?? '[]';
+    $existing = json_decode($existingRaw, true) ?? [];
+    $existingByRio = [];
+    foreach ($existing as $a) {
+        $rio = strtolower((string)($a['rio'] ?? ''));
+        if ($rio !== '') $existingByRio[$rio] = $a;
+    }
+    foreach ($accounts as $a) {
+        $rio = strtolower((string)($a['rio'] ?? ''));
+        if ($rio !== '') $existingByRio[$rio] = $a;
+    }
+    $merged = array_values($existingByRio);
+    $store[PM_STORAGE_KEY] = json_encode($merged, JSON_UNESCAPED_UNICODE);
+    pm_write_store($store);
+    pm_json_response(['ok' => true, 'count' => count($merged)]);
 }
 
 // --- Candidatures API ---
