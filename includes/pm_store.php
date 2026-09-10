@@ -117,7 +117,12 @@ function pm_is_vercel(): bool
 {
     $url  = $_SERVER['VERCEL_URL'] ?? getenv('VERCEL_URL') ?: '';
     $env  = $_SERVER['VERCEL_ENV'] ?? getenv('VERCEL_ENV') ?: '';
-    return str_contains($url, 'vercel.app') || strtolower($env) === 'production';
+    if (str_contains($url, 'vercel.app') || strtolower($env) === 'production') {
+        return true;
+    }
+    $key  = $_SERVER['SUPABASE_KEY'] ?? getenv('SUPABASE_KEY') ?: '';
+    $surl = $_SERVER['SUPABASE_URL'] ?? getenv('SUPABASE_URL') ?: '';
+    return $key !== '' && $surl !== '';
 }
 
 /**
