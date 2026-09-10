@@ -4,13 +4,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/pm_hosting_config.php';
 require_once __DIR__ . '/includes/pm_store.php';
 
-// Quick Supabase test — before session_start to avoid crash blocking
+// Quick MySQL test — before session_start to avoid crash blocking
 $uri_quick = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-if ($uri_quick === '/api/debug/supabase' || $uri_quick === '/api/debug/supabase/') {
+if ($uri_quick === '/api/debug/mysql' || $uri_quick === '/api/debug/mysql/') {
     header('Content-Type: application/json');
     $r = ['uri' => $uri_quick];
-    try { pm_supabase_kv_set('_test_' . time(), gmdate('c')); $r['write'] = 'OK'; } catch (\Throwable $e) { $r['write'] = 'FAIL: ' . $e->getMessage(); }
-    try { $all = pm_supabase_kv_get_all(); $r['count'] = count($all); $r['keys'] = array_slice(array_keys($all), 0, 10); } catch (\Throwable $e) { $r['count'] = 'FAIL: ' . $e->getMessage(); }
+    try { pm_mysql_kv_set('_test_' . time(), gmdate('c')); $r['write'] = 'OK'; } catch (\Throwable $e) { $r['write'] = 'FAIL: ' . $e->getMessage(); }
+    try { $all = pm_mysql_kv_get_all(); $r['count'] = count($all); $r['keys'] = array_slice(array_keys($all), 0, 10); } catch (\Throwable $e) { $r['count'] = 'FAIL: ' . $e->getMessage(); }
     echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
@@ -1419,17 +1419,17 @@ if ($method === 'GET' && $sub === '/examens/results') {
     pm_json_response(['results' => $results]);
 }
 
-// GET /api/debug/supabase — public test endpoint for Supabase connectivity
-if ($method === 'GET' && $sub === '/debug/supabase') {
+// GET /api/debug/mysql — test endpoint for MySQL connectivity
+if ($method === 'GET' && $sub === '/debug/mysql') {
     $results = [];
     try {
-        pm_supabase_kv_set('_test_' . time(), gmdate('c'));
+        pm_mysql_kv_set('_test_' . time(), gmdate('c'));
         $results['write'] = 'OK';
     } catch (\Throwable $e) {
         $results['write'] = 'FAIL: ' . $e->getMessage();
     }
     try {
-        $all = pm_supabase_kv_get_all();
+        $all = pm_mysql_kv_get_all();
         $results['count'] = count($all);
         $results['keys'] = array_slice(array_keys($all), 0, 10);
     } catch (\Throwable $e) {

@@ -2,22 +2,22 @@
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $root = __DIR__ . '/..';
 
-// Supabase test — direct in api/index.php, no session needed
-if ($uri === '/supabase-test.php' || $uri === '/supabase-test') {
+// MySQL test — direct in api/index.php, no session needed
+if ($uri === '/mysql-test.php' || $uri === '/mysql-test') {
     header('Content-Type: application/json');
     error_reporting(E_ALL);
     ini_set('display_errors', '0');
     $results = ['step' => 'start'];
     try {
-        require_once $root . '/includes/pm_supabase.php';
-        $results['step'] = 'supabase_loaded';
+        require_once $root . '/config.mysql.php';
+        $results['step'] = 'mysql_loaded';
     } catch (Throwable $e) {
         $results['error'] = 'load: ' . $e->getMessage();
         echo json_encode($results);
         exit;
     }
-    try { $k = '_test_' . time(); pm_supabase_kv_set($k, gmdate('c')); $results['write'] = 'OK key=' . $k; } catch (Throwable $e) { $results['write'] = 'FAIL: ' . $e->getMessage(); }
-    try { $all = pm_supabase_kv_get_all(); $results['count'] = count($all); $results['keys'] = array_slice(array_keys($all), 0, 10); } catch (Throwable $e) { $results['count'] = 'FAIL: ' . $e->getMessage(); }
+    try { $k = '_test_' . time(); pm_mysql_kv_set($k, gmdate('c')); $results['write'] = 'OK key=' . $k; } catch (Throwable $e) { $results['write'] = 'FAIL: ' . $e->getMessage(); }
+    try { $all = pm_mysql_kv_get_all(); $results['count'] = count($all); $results['keys'] = array_slice(array_keys($all), 0, 10); } catch (Throwable $e) { $results['count'] = 'FAIL: ' . $e->getMessage(); }
     echo json_encode($results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }

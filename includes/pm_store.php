@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/pm_supabase.php';
+require_once __DIR__ . '/../config.mysql.php';
 
 const PM_ROLES_DIRECTION = 'Direction';
 const PM_ROLES_EFFECTIF = 'Effectif';
@@ -75,13 +75,12 @@ function pm_project_root(): string
 
 function pm_data_dir(): string
 {
-    if (pm_is_vercel()) {
-        $tmp = '/tmp/pm_data';
+    if (function_exists('pm_is_mysql') && pm_is_mysql()) {
+        $tmp = sys_get_temp_dir() . '/pm_data';
         if (!is_dir($tmp)) @mkdir($tmp, 0775, true);
-        // Seed from deployment on first request
         $seed = pm_project_root() . DIRECTORY_SEPARATOR . 'data';
         if (is_dir($seed) && $tmp !== $seed) {
-            foreach (['store.json', 'candidatures.json', 'recrutement_messages.json'] as $f) {
+            foreach (['candidatures.json', 'recrutement_messages.json'] as $f) {
                 $src = $seed . DIRECTORY_SEPARATOR . $f;
                 $dst = $tmp . DIRECTORY_SEPARATOR . $f;
                 if (is_file($src) && !is_file($dst)) {
@@ -113,16 +112,9 @@ function pm_default_store(): array
     return [PM_STORAGE_KEY => json_encode(pm_initial_accounts(), JSON_UNESCAPED_UNICODE)];
 }
 
-function pm_is_vercel(): bool
+function pm_is_mysql(): bool
 {
-    $url  = $_SERVER['VERCEL_URL'] ?? getenv('VERCEL_URL') ?: '';
-    $env  = $_SERVER['VERCEL_ENV'] ?? getenv('VERCEL_ENV') ?: '';
-    if (str_contains($url, 'vercel.app') || strtolower($env) === 'production') {
-        return true;
-    }
-    $key  = $_SERVER['SUPABASE_KEY'] ?? getenv('SUPABASE_KEY') ?: '';
-    $surl = $_SERVER['SUPABASE_URL'] ?? getenv('SUPABASE_URL') ?: '';
-    return $key !== '' && $surl !== '';
+    return defined('PM_MYSQL_DB') && PM_MYSQL_DB !== '';
 }
 
 /**
@@ -130,16 +122,15 @@ function pm_is_vercel(): bool
  */
 function pm_read_store(): array
 {
-    if (pm_is_vercel()) {
+    if (pm_is_mysql()) {
         try {
-            $all = pm_supabase_kv_get_all();
+            $all = pm_mysql_kv_get_all();
             if ($all !== []) {
                 return $all;
             }
-            // Supabase vide : retourner les defaults SANS écrire (écriture = PUT /storage ou seed)
             return pm_default_store();
         } catch (\Throwable $e) {
-            error_log('[PM SUPABASE] read_store failed: ' . $e->getMessage());
+            error_log('[PM MYSQL] read_store failed: ' . $e->getMessage());
             return pm_default_store();
         }
     }
@@ -167,12 +158,12 @@ function pm_read_store(): array
  */
 function pm_write_store(array $store): void
 {
-    if (pm_is_vercel()) {
+    if (pm_is_mysql()) {
         try {
-            pm_supabase_kv_set_all($store);
+            pm_mysql_kv_set_all($store);
             return;
         } catch (\Throwable $e) {
-            error_log('[PM SUPABASE] write_store failed: ' . $e->getMessage());
+            error_log('[PM MYSQL] write_store failed: ' . $e->getMessage());
         }
     }
     // Local file fallback
