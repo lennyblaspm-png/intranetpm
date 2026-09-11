@@ -1624,15 +1624,8 @@ refreshNotifBadge(); renderNotifPanel(); }
                 break;
 
             case 'recrutement':
-
-                renderRecrutement();
-
-                break;
-
             case 'messagerie-recrutement':
-
-                renderMessagerieRecrutement();
-
+                contentArea.innerHTML = '<div class="card"><p>Cette fonctionnalité n\'est plus disponible.</p></div>';
                 break;
 
             case 'gestion-comptes':
