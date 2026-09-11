@@ -251,6 +251,16 @@
                     <button class="cat-dropdown-item" data-section="recherche" onclick="window.__pmGoSection('recherche')"><i class="fas fa-users-viewfinder"></i> Recherche Effectif</button>
                 </div>
             </div>
+            <div class="cat-nav-item direction-only recrutement-only" data-cat="recrutement">
+                <button class="cat-nav-btn direction-only recrutement-only" data-cat="recrutement" onclick="window.__pmToggleCat(this)"><i class="fas fa-clipboard-user"></i> Recrutement <i class="fas fa-chevron-down" style="font-size:9px;margin-left:2px;"></i></button>
+                <div class="cat-dropdown">
+                    <button class="cat-dropdown-item direction-only recrutement-only" data-section="recrutement" onclick="window.__pmGoSection('recrutement')"><i class="fas fa-clipboard-user"></i> Candidatures <span id="top-tab-recrut-badge" class="nav-candidatures-badge" hidden></span></button>
+                    <button class="cat-dropdown-item direction-only recrutement-only" data-section="messagerie-recrutement" onclick="window.__pmGoSection('messagerie-recrutement')"><i class="fas fa-comments"></i> Messagerie recrutement</button>
+                    <div class="cat-dropdown-divider"></div>
+                    <button class="cat-dropdown-item direction-only recrutement-only" data-section="generer-code-integration" onclick="window.__pmGoSection('generer-code-integration')"><i class="fas fa-key"></i> Générer un code</button>
+                    <button class="cat-dropdown-item direction-only recrutement-only" data-section="resultats-formulaires" onclick="window.__pmGoSection('resultats-formulaires')"><i class="fas fa-chart-bar"></i> Résultats formulaires</button>
+                </div>
+            </div>
             <div class="cat-nav-item" data-cat="examens">
                 <button class="cat-nav-btn" data-cat="examens" onclick="window.__pmToggleCat(this)"><i class="fas fa-pen-fancy"></i> Examen <i class="fas fa-chevron-down" style="font-size:9px;margin-left:2px;"></i></button>
                 <div class="cat-dropdown">

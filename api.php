@@ -892,6 +892,8 @@ if ($method === 'POST' && $sub === '/storage/import') {
 // --- Candidatures API ---
 
 require_once __DIR__ . '/includes/pm_candidatures.php';
+require_once __DIR__ . '/includes/pm_recrutement_messaging.php';
+require_once __DIR__ . '/includes/pm_recrutement_reference.php';
 
 // Candidature session helpers (session already started at top of api.php)
 function pm_candidature_set_session(string $candidatureId): void
@@ -1155,10 +1157,13 @@ if ($method === 'POST' && $sub === '/candidatures/delete') {
     if (!is_array($body)) $body = [];
 
     $cStore = pm_read_candidatures_store();
+    $msgStore = pm_read_recrutement_messages();
 
     if (!empty($body['delete_all_processed'])) {
         $removedIds = pm_delete_all_processed_candidatures($cStore);
+        pm_recrutement_remove_threads_for($msgStore, $removedIds);
         pm_write_candidatures_store($cStore);
+        pm_write_recrutement_messages($msgStore);
         pm_json_response(['ok' => true, 'deleted' => count($removedIds)]);
     }
 
@@ -1169,10 +1174,106 @@ if ($method === 'POST' && $sub === '/candidatures/delete') {
 
     $deleted = pm_try_delete_candidature_by_id($cStore, $id);
     if ($deleted) {
+        pm_recrutement_remove_thread_one($msgStore, $id);
         pm_write_candidatures_store($cStore);
+        pm_write_recrutement_messages($msgStore);
         pm_json_response(['ok' => true]);
     }
     pm_json_response(['error' => 'Candidature introuvable.'], 404);
+}
+
+// --- Recruitment Messaging ---
+
+// GET/POST /api/recrutement-messages (Direction)
+if ($sub === '/recrutement-messages' && strpos((string)($_SERVER['QUERY_STRING'] ?? ''), 'as-candidat') === false) {
+    pm_require_session();
+    $store = pm_read_store();
+    $accounts = pm_get_accounts_from_store($store);
+    $rio = strtolower((string) ($_SESSION['rio'] ?? ''));
+    $actor = null;
+    foreach ($accounts as $a) {
+        if (isset($a['rio']) && strtolower((string) $a['rio']) === $rio) {
+            $actor = $a;
+            break;
+        }
+    }
+    if (!pm_is_triade_lead($actor) && empty($actor['isRecruteur'])) {
+        pm_json_response(['error' => 'Accès réservé à la Direction / Recruteurs.'], 403);
+    }
+
+    $msgStore = pm_read_recrutement_messages();
+    $cStore = pm_read_candidatures_store();
+
+    if ($method === 'GET') {
+        $candidatureId = (string) ($_GET['candidature_id'] ?? '');
+        if ($candidatureId === '') {
+            $threads = [];
+            foreach ($msgStore['by_candidature_id'] as $cid => $msgs) {
+                if (!is_array($msgs)) continue;
+                $row = pm_find_candidature_row_by_id($cStore, $cid);
+                $lastMsg = end($msgs);
+                $threads[] = [
+                    'candidature_id' => $cid,
+                    'reference' => $row ? (string) ($row['reference'] ?? '') : '',
+                    'prenom' => $row ? (string) ($row['prenom'] ?? '') : '',
+                    'nom' => $row ? (string) ($row['nom'] ?? '') : '',
+                    'discord' => $row ? (string) ($row['discord'] ?? '') : '',
+                    'statut' => $row ? (string) ($row['statut'] ?? '') : '',
+                    'message_count' => count($msgs),
+                    'preview' => ($lastMsg && isset($lastMsg['body'])) ? mb_substr((string) $lastMsg['body'], 0, 80, 'UTF-8') : '',
+                    'last_at' => ($lastMsg && isset($lastMsg['created_at'])) ? (string) $lastMsg['created_at'] : '',
+                ];
+            }
+            pm_json_response(['threads' => $threads]);
+        }
+        $messages = pm_recrutement_get_thread($msgStore, $candidatureId);
+        $candRow = pm_find_candidature_row_by_id($cStore, $candidatureId);
+        $candidature = $candRow ? pm_candidature_public_payload($candRow) : null;
+        pm_json_response(['messages' => $messages, 'candidature' => $candidature]);
+    }
+
+    if ($method === 'POST') {
+        $raw = file_get_contents('php://input');
+        $body = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($body)) $body = [];
+        $candidatureId = (string) ($body['candidature_id'] ?? '');
+        $text = pm_sanitize_recrutement_message_body((string) ($body['text'] ?? ''));
+        if ($candidatureId === '' || $text === '') {
+            pm_json_response(['error' => 'Paramètres invalides.'], 400);
+        }
+        $authorName = trim(($actor['prenom'] ?? '') . ' ' . ($actor['nom'] ?? ''));
+        $msg = pm_recrutement_append_message($msgStore, $candidatureId, 'direction', $text, $authorName !== '' ? $authorName : null);
+        pm_write_recrutement_messages($msgStore);
+        pm_json_response(['ok' => true, 'message' => $msg]);
+    }
+}
+
+// GET/POST /api/recrutement-messages/as-candidat
+if ($sub === '/recrutement-messages/as-candidat') {
+    $candId = pm_candidature_get_session();
+    if ($candId === '') {
+        pm_json_response(['error' => 'Non connecté.'], 401);
+    }
+
+    $msgStore = pm_read_recrutement_messages();
+
+    if ($method === 'GET') {
+        $messages = pm_recrutement_get_thread($msgStore, $candId);
+        pm_json_response(['messages' => $messages]);
+    }
+
+    if ($method === 'POST') {
+        $raw = file_get_contents('php://input');
+        $body = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($body)) $body = [];
+        $text = pm_sanitize_recrutement_message_body((string) ($body['text'] ?? ''));
+        if ($text === '') {
+            pm_json_response(['error' => 'Message vide.'], 400);
+        }
+        $msg = pm_recrutement_append_message($msgStore, $candId, 'candidate', $text, null);
+        pm_write_recrutement_messages($msgStore);
+        pm_json_response(['ok' => true, 'message' => $msg]);
+    }
 }
 
 // --- Examens API ---
