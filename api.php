@@ -25,16 +25,29 @@ function pm_send_discord_webhook(string $url, array $payload): void {
     if ($url === '' || !str_starts_with($url, 'https://')) return;
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) return;
-    $opts = [
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/json\r\n",
-            'content' => $json,
-            'timeout' => 4,
-            'ignore_errors' => true,
-        ]
-    ];
-    @file_get_contents($url, false, stream_context_create($opts));
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $json,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_RETURNTRANSFER => true,
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    } else {
+        $opts = [
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/json\r\n",
+                'content' => $json,
+                'timeout' => 4,
+                'ignore_errors' => true,
+            ]
+        ];
+        @file_get_contents($url, false, stream_context_create($opts));
+    }
 }
 function pm_get_webhook_url(array $store, string $type): string {
     $raw = $store['PM_INTRANET_WEBHOOKS'] ?? '';
